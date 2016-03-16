@@ -12,6 +12,6 @@ $ [sudo] apt-get install libboost-all-dev
 ```
 
 ## Usage ##
-[Advanced User Manual]: https://github.com/P2PSP/p2psp/tree/master/doc/advanced-user-manual "Advanced User Manual"
+[Advanced User Manual](https://github.com/P2PSP/p2psp/tree/master/doc/advanced-user-manual)
 
 
