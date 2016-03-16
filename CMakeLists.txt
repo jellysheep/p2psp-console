@@ -65,7 +65,7 @@ endif ()
 
 if(BUILD_PEER)
   # Executable
-  add_executable(peer "peer.cc")
+  add_executable(peer "src/peer.cc")
 
   # Libraries
   target_link_libraries(peer 
@@ -81,7 +81,7 @@ endif()
 
 if(BUILD_SPLITTER)
   # Executable
-  add_executable(splitter "splitter.cc")
+  add_executable(splitter "src/splitter.cc")
   
   # Libraries
   target_link_libraries(splitter 

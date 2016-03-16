@@ -10,15 +10,15 @@
 
 #include <iostream>
 #include <memory>
-#include "lib/p2psp/src/core/splitter_ims.h"
-#include "lib/p2psp/src/core/splitter_dbs.h"
-#include "lib/p2psp/src/core/splitter_acs.h"
-#include "lib/p2psp/src/core/splitter_lrs.h"
-#include "lib/p2psp/src/core/splitter_strpe.h"
+#include "../lib/p2psp/src/core/splitter_ims.h"
+#include "../lib/p2psp/src/core/splitter_dbs.h"
+#include "../lib/p2psp/src/core/splitter_acs.h"
+#include "../lib/p2psp/src/core/splitter_lrs.h"
+#include "../lib/p2psp/src/core/splitter_strpe.h"
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <signal.h>
-#include "lib/p2psp/src/util/trace.h"
+#include "../lib/p2psp/src/util/trace.h"
 
 // TODO: LOG fails if splitter is defined outside the main
 // p2psp::SplitterSTRPE splitter;
