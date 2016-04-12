@@ -17,61 +17,34 @@ int run(int argc, const char* argv[]) throw(boost::system::system_error) {
   boost::format format("Defaut = %5i");
 
   // Argument Parser
-  boost::program_options::options_description desc(
-      "This is the peer node of a P2PSP team.");
+  boost::program_options::options_description desc("This is the peer node of a P2PSP team");
 
   // TODO: strpe option should expect a list of arguments, not bool
-  desc.add_options()("help,h", "Produce help message")(
-      "enable_chunk_loss", boost::program_options::value<std::string>(),
-      "Forces a lost of chunks")(
-      "max_chunk_debt", boost::program_options::value<int>(),
-      "The maximun number of times that other peer "
-      "can not send a chunk to "
-      "this peer.")(  // TODO: (format % 10).str()).data())
-                      // --
-                      // format(Peer_DBS.MAX_CHUNK_DEBT)
-      "player_port", boost::program_options::value<uint16_t>(),
-      "Port to communicate with the player. "
-      "Default = {}")(  //.format(Peer_IMS.PLAYER_PORT)"
-      "port_step", boost::program_options::value<int>(),
-      "Source port step forced when behind a sequentially port "
-      "allocating NAT (conflicts with --chunk_loss_period). Default = "
-      "{}")(  //.format(Symsp_Peer.PORT_STEP)
-
-      "splitter_addr", boost::program_options::value<std::string>(),
-      "IP address or hostname of the splitter. Default = {}.")(  //.format(Peer_IMS.SPLITTER_ADDR)
-
-      "splitter_port", boost::program_options::value<uint16_t>(),
-      "Listening port of the splitter. Default = {}.")(  //.format(Peer_IMS.SPLITTER_PORT)
-      "port", boost::program_options::value<uint16_t>(),
-      "Port to communicate with the peers. Default {} (the OS will chose "
-      "it).")(  //.format(Peer_IMS.PORT)
-      "use_localhost",
-      "Forces the peer to use localhost instead of the IP of the adapter "
-      "to connect to the splitter. Notice that in this case, peers that "
-      "run outside of the host will not be able to communicate with this "
-      "peer.")(
-      //"malicious",
-      // boost::program_options::value<bool>()->implicit_value(true),
-      //"Enables the malicious activity for peer.")(
-      "persistent", boost::program_options::value<std::string>(),
-      "Forces the peer to send poisoned chunks to other peers.")(
-      "on_off_ratio", boost::program_options::value<int>(),
-      "Enables on-off attack and sets ratio for on off (from 1 to 100)")(
-      "selective", boost::program_options::value<std::string>(),
-      "Enables selective attack for given set of peers.")(
-      "bad_mouth", boost::program_options::value<std::string>(),
-      "Enables Bad Mouth attack for given set of peers.")(
-      // "trusted", boost::program_options::value<bool>()->implicit_value(true),
-      // "Forces the peer to send hashes of chunks to splitter")(
-      "checkall",
-      "Forces the peer to send hashes of every chunks to splitter (works only "
-      "with trusted option)")(
-      // "strpeds", boost::program_options::value<bool>()->implicit_value(true),
-      // "Enables STrPe-DS")(
-      "strpe_log", "Logging STrPe & STrPe-DS specific data to file.")(
-      "monitor", "The peer is a monitor")(
-      "show_buffer", "Shows the status of the buffer of chunks.");
+  desc.add_options()
+    ("help,h", "Produce this help message")
+    ("enable_chunk_loss", boost::program_options::value<std::string>(),"Forces a lost of chunks")
+    ("max_chunk_debt", boost::program_options::value<int>(),"The maximun number of times that other peer can not send a chunk to this peer.")
+    ("port", boost::program_options::value<uint16_t>(),"Port to communicate with the client. Default = {}")
+    ("team_port_step", boost::program_options::value<int>(), "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period). Default = {}")
+    ("splitter_addr", boost::program_options::value<std::string>(), "IP address or hostname of the splitter. Default = {}.")
+    ("splitter_port", boost::program_options::value<uint16_t>(), "Listening port of the splitter. Default = {}.")
+    ("team_port", boost::program_options::value<uint16_t>(), "Port to communicate with the peers. Default {} (the OS will chose it).")
+    ("use_localhost", "Forces the peer to use localhost instead of the IP of the adapter to connect to the splitter. Notice that in this case, peers that run outside of the host will not be able to communicate with this peer.")
+    //"malicious",
+    // boost::program_options::value<bool>()->implicit_value(true),
+    //"Enables the malicious activity for peer.")(
+    ("persistent", boost::program_options::value<std::string>(), "Forces the peer to send poisoned chunks to other peers.")
+    ("on_off_ratio", boost::program_options::value<int>(), "Enables on-off attack and sets ratio for on off (from 1 to 100)")
+    ("selective", boost::program_options::value<std::string>(), "Enables selective attack for given set of peers.")
+    ("bad_mouth", boost::program_options::value<std::string>(), "Enables Bad Mouth attack for given set of peers.")
+    // "trusted", boost::program_options::value<bool>()->implicit_value(true),
+    // "Forces the peer to send hashes of chunks to splitter")(
+    ("checkall", "Forces the peer to send hashes of every chunks to splitter (works only with trusted option)")
+    // "strpeds", boost::program_options::value<bool>()->implicit_value(true),
+    // "Enables STrPe-DS")(
+    ("strpe_log", "Logging STrPe & STrPe-DS specific data to file.")
+    ("monitor", "The peer is a monitor")
+    ("show_buffer", "Shows the status of the buffer of chunks.");
 
   boost::program_options::variables_map vm;
   try {
@@ -109,12 +82,12 @@ int run(int argc, const char* argv[]) throw(boost::system::system_error) {
     peer->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
   }
 
-  if (vm.count("player_port")) {
-    peer->SetPlayerPort(vm["player_port"].as<uint16_t>());
+  if (vm.count("port")) {
+    peer->SetPort(vm["port"].as<uint16_t>());
   }
 
-  if (vm.count("port_step")) {
-    // Symsp_Peer peer->SetPortStep(vm["port_step"].as<int>());
+  if (vm.count("team_port_step")) {
+    // Symsp_Peer peer->SetTeamPortStep(vm["team_port_step"].as<int>());
   }
 
   if (vm.count("splitter_addr")) {
@@ -125,8 +98,8 @@ int run(int argc, const char* argv[]) throw(boost::system::system_error) {
     peer->SetSplitterPort(vm["splitter_port"].as<uint16_t>());
   }
 
-  if (vm.count("port")) {
-    peer->SetPort(vm["port"].as<uint16_t>());
+  if (vm.count("team_port")) {
+    peer->SetTeamPort(vm["team_port"].as<uint16_t>());
   }
 
   if (vm.count("use_localhost")) {
