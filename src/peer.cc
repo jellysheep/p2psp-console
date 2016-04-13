@@ -8,30 +8,6 @@
 //  http://www.p2psp.org
 //
 
-//#include "peer_core.h"
-
-//
-//  peer_core.cc
-//  P2PSP
-//
-//  This code is distributed under the GNU General Public License (see
-//  THE_GENERAL_GNU_PUBLIC_LICENSE.txt for extending this information).
-//  Copyright (C) 2016, the P2PSP team.
-//  http://www.p2psp.org
-//
-
-//#include "peer_core.h"
-
-//
-//  peer_core.h
-//  P2PSP
-//
-//  This code is distributed under the GNU General Public License (see
-//  THE_GENERAL_GNU_PUBLIC_LICENSE.txt for extending this information).
-//  Copyright (C) 2016, the P2PSP team.
-//  http://www.p2psp.org
-//
-
 #include <boost/format.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -57,10 +33,10 @@ namespace p2psp {
 
     // TODO: strpe option should expect a list of arguments, not bool
     desc.add_options()
-      ("help,h", "Produce this help message")
-      ("enable_chunk_loss", boost::program_options::value<std::string>(),"Forces a lost of chunks")
-      ("max_chunk_debt", boost::program_options::value<int>(),"The maximun number of times that other peer can not send a chunk to this peer.")
-      ("port", boost::program_options::value<uint16_t>(),"Port to communicate with the client. Default = {}")
+      ("help,h", "Produce this help message and exits.")
+      ("enable_chunk_loss", boost::program_options::value<std::string>(),"Forces a lost of chunks.")
+      ("max_chunk_debt", boost::program_options::value<int>(),"Maximum number of times that other peer can not send a chunk to this peer.")
+      ("player_port", boost::program_options::value<uint16_t>(),"Port to communicate with the player. Default = {}")
       ("team_port_step", boost::program_options::value<int>(), "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period). Default = {}")
       ("splitter_addr", boost::program_options::value<std::string>(), "IP address or hostname of the splitter. Default = {}.")
       ("splitter_port", boost::program_options::value<uint16_t>(), "Listening port of the splitter. Default = {}.")
@@ -83,14 +59,15 @@ namespace p2psp {
       ("show_buffer", "Shows the status of the buffer of chunks.");
 
     boost::program_options::variables_map vm;
+
     try {
-      boost::program_options::store(
-				    boost::program_options::parse_command_line(argc, argv, desc), vm);
+      boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
     } catch (std::exception& e) {
       // If the argument passed is unknown, print the list of available arguments
       std::cout << desc << "\n";
       return 1;
     }
+    
     boost::program_options::notify(vm);
 
     if (vm.count("help")) {
@@ -118,8 +95,8 @@ namespace p2psp {
       peer->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
     }
 
-    if (vm.count("port")) {
-      peer->SetPort(vm["port"].as<uint16_t>());
+    if (vm.count("player_port")) {
+      peer->SetConsumerPort(vm["player_port"].as<uint16_t>());
     }
 
     if (vm.count("team_port_step")) {
@@ -168,7 +145,7 @@ namespace p2psp {
       // TODO: Handle logging
       }*/
 
-    peer->WaitForThePlayer();
+    peer->WaitForTheConsumer();
     peer->ConnectToTheSplitter();
     peer->ReceiveTheMcasteEndpoint();
     peer->ReceiveTheHeaderSize();
@@ -228,7 +205,7 @@ namespace p2psp {
 	"---------+---------------------+----------------------+-----------------"
 	"------------------...");
 
-    int last_chunk_number = peer->GetPlayedChunk();
+    int last_chunk_number = peer->GetConsumedChunk();
     int last_sendto_counter = -1;
     if (peer->GetSendtoCounter() < 0) {
       last_sendto_counter = 0;
@@ -246,22 +223,18 @@ namespace p2psp {
     // float nice = 0.0f;
     int counter = 0;
 
-    while (peer->IsPlayerAlive()) {
+    while (peer->IsConsumerAlive()) {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
-      kbps_expected_recv = ((peer->GetPlayedChunk() - last_chunk_number) *
-			    peer->GetChunkSize() * 8) /
-	1000.0f;
-      last_chunk_number = peer->GetPlayedChunk();
+      kbps_expected_recv = ((peer->GetConsumedChunk() - last_chunk_number) *
+			    peer->GetChunkSize() * 8) / 1000.0f;
+      last_chunk_number = peer->GetConsumedChunk();
       kbps_recvfrom = ((peer->GetRecvfromCounter() - last_recvfrom_counter) *
-		       peer->GetChunkSize() * 8) /
-	1000.0f;
+		       peer->GetChunkSize() * 8) / 1000.0f;
       last_recvfrom_counter = peer->GetRecvfromCounter();
-      team_ratio =
-        peer->GetPeerList()->size() / (peer->GetPeerList()->size() + 1.0f);
+      team_ratio = peer->GetPeerList()->size() / (peer->GetPeerList()->size() + 1.0f);
       kbps_expected_sent = (int)(kbps_expected_recv * team_ratio);
       kbps_sendto = ((peer->GetSendtoCounter() - last_sendto_counter) *
-		     peer->GetChunkSize() * 8) /
-	1000.0f;
+		     peer->GetChunkSize() * 8) / 1000.0f;
       last_sendto_counter = peer->GetSendtoCounter();
 
       // try:
@@ -311,9 +284,7 @@ namespace p2psp {
       // print(repr(nice).ljust(1)[:6], end=' ')
       LOG(peer->GetPeerList()->size());
       counter = 0;
-      for (std::vector<boost::asio::ip::udp::endpoint>::iterator p =
-             peer->GetPeerList()->begin();
-	   p != peer->GetPeerList()->end(); ++p) {
+      for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = peer->GetPeerList()->begin(); p != peer->GetPeerList()->end(); ++p) {
 	if (counter < 5) {
 	  LOG("(" << p->address().to_string() << "," << std::to_string(p->port())
 	      << ")");
