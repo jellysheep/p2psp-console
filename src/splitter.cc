@@ -23,6 +23,7 @@
 // TODO: LOG fails if splitter is defined outside the main
 // p2psp::SplitterSTRPE splitter;
 std::shared_ptr<p2psp::SplitterIMS> splitter_ptr;
+
 // True if splitter_ptr is SplitterIMS and no subclass
 bool is_IMS_only;
 
@@ -68,53 +69,99 @@ bool HasParameter(const boost::program_options::variables_map& vm,
 }
 
 int main(int argc, const char *argv[]) {
+
   // Argument Parser
   boost::program_options::options_description desc(
-      "This is the splitter node of a P2PSP team.  The splitter is in charge "
-      "of defining the Set or Rules (SoR) that will control the team. By "
-      "default, DBS (unicast transmissions) will be used");
+      "This is the splitter node of a P2PSP team.\n"
+      "The splitter is in charge of defining the Set or Rules (SoR) that will control the team. \n"
+      "By default, DBS (unicast transmissions) will be used.\n"
+      "Parameters");
+
+  {
+  
+  p2psp::SplitterIMS ims;
+  int buffer_size = ims.GetBufferSize();
+  std::string channel = ims.GetChannel();
+  int chunk_size = ims.GetChunkSize();
+  int header_size = ims.GetHeaderSize();
+  std::string mcast_addr = ims.GetMcastAddr();
+  int team_port = ims.GetPort(); // GetTeamPort()
+  std::string source_addr = ims.GetSourceAddr();
+  int source_port = ims.GetSourcePort();
+  int TTL = ims.GetTTL();
+
+  p2psp::SplitterDBS dbs;
+  int max_number_of_chunk_loss = dbs.GetMaxNumberOfChunkLoss();
+  int max_number_of_monitors=dbs.GetMaxNumberOfMonitors();
 
   // TODO: strpe option should expect a list of arguments, not bool
-  desc.add_options()("help,h", "Produces this help message")("splitter_addr",
-                     boost::program_options::value<std::string>(),
-                     "IP address to serve (TCP) the peers. (Default = '{}')")(
-      "buffer_size", boost::program_options::value<int>(),
-      "size of the video buffer in blocks. Default = {}.")(
-      "channel", boost::program_options::value<std::string>(),
-      "Name of the channel served by the streaming source. Default = '{}'.")(
-      "chunk_size", boost::program_options::value<int>(),
-      "Chunk size in bytes. Default = '{}'.")(
-      "header_size", boost::program_options::value<int>(),
-      "Size of the header of the stream in chunks. Default = '{}'.")(
-      "max_chunk_loss", boost::program_options::value<int>(),
-      "Maximum number of lost chunks for an unsupportive peer. Makes sense "
-      "only in unicast mode. Default = '{}'.")(
-      "max_number_of_monitor_peers", boost::program_options::value<int>(),
-      "Maximum number of monitors in the team. The first connecting peers will "
-      "automatically become monitors. Default = '{}'.")(
-      "mcast_addr", boost::program_options::value<std::string>(),
-      "IP multicast address used to serve the chunks. Makes sense only in "
-      "multicast mode. Default = '{}'.")(
-      "port", boost::program_options::value<int>(),
-      "Port to serve the peers. Default = '{}'.")(
-      "source_addr", boost::program_options::value<std::string>(),
-      "IP address or hostname of the streaming server. Default = '{}'.")(
-      "source_port", boost::program_options::value<int>(),
-      "Port where the streaming server is listening. Default = '{}'.")(
-      "IMS", "Uses the IP multicast infrastructure, if available. IMS mode is "
-      "incompatible with ACS, LRS, DIS and NTS modes.")(
-      "NTS", "Enables NAT traversal.")(
-      "ACS", "Enables Adaptative Chunk-rate.")(
-      "LRS", "Enables Lost chunk Recovery")(
-      "DIS", "Enables Data Integrity check.")(
-      "strpe", "Selects STrPe model for DIS.")("strpeds", "Selects STrPe-DS model for DIS.")(
-      "strpeds_majority_decision",
-      "Sets majority decision ratio for STrPe-DS model.")(
+  desc.add_options()
+    (
+     "help,h", "Produces this help message and exits.")
+    (
+     "buffer_size",
+     boost::program_options::value<int>(&buffer_size)->default_value(buffer_size),
+     "Size of the buffer in chunks.")
+    (
+     "channel",
+     boost::program_options::value<std::string>(&channel)->default_value(channel),
+     "Name of the channel served by the streaming source.")
+    (
+     "chunk_size",
+     boost::program_options::value<int>(&chunk_size)->default_value(chunk_size),
+     "Chunk size in bytes.")
+    (
+     "header_size",
+     boost::program_options::value<int>(&header_size)->default_value(header_size),
+     "Size of the header of the stream in chunks.")
+    (
+     "max_number_of_chunk_loss",
+     boost::program_options::value<int>(&max_number_of_chunk_loss)->default_value(max_number_of_chunk_loss),
+     "Maximum number of lost chunks for an unsupportive peer. Makes sense only in unicast mode.")
+    (
+     "max_number_of_monitors",
+     boost::program_options::value<int>(&max_number_of_monitors)->default_value(max_number_of_monitors),
+     "Maximum number of monitors in the team. The first connecting peers will automatically become monitors.")
+    (
+     "mcast_addr",
+     boost::program_options::value<std::string>(&mcast_addr)->default_value(mcast_addr),
+     "IP multicast address used to serve the chunks. Makes sense only in multicast mode.")
+    (
+     "team_port",
+     boost::program_options::value<int>(&team_port)->default_value(team_port),
+     "Port to serve the peers.")
+    (
+     "source_addr",
+     boost::program_options::value<std::string>(&source_addr)->default_value(source_addr),
+     "IP address or hostname of the streaming server.")
+    (
+     "source_port",
+     boost::program_options::value<int>(&source_port)->default_value(source_port),
+     "Port where the streaming server is listening.")
+    (
+     "IMS", "Uses the IP multicast infrastructure, if available. IMS mode is incompatible with ACS, LRS, DIS and NTS modes.")
+    (
+     "NTS", "Enables NAT traversal.")
+    (
+     "ACS", "Enables Adaptative Chunk-rate.")
+    (
+     "LRS", "Enables Lost chunk Recovery")
+    (
+     "DIS", "Enables Data Integrity check.")
+    (
+     "strpe", "Selects STrPe model for DIS.")
+    (
+     "strpeds", "Selects STrPe-DS model for DIS.")
+    (
+     "strpeds_majority_decision", "Sets majority decision ratio for STrPe-DS model.")
+    (
       "strpe_log", boost::program_options::value<std::string>(),
-      "Loggin STrPe & STrPe-DS specific data to file.")(
-      "TTL", boost::program_options::value<int>(),
-      "Time To Live of the multicast messages. Default = '{}'.");
-
+      "Loggin STrPe & STrPe-DS specific data to file.")
+    (
+     "TTL", boost::program_options::value<int>(&TTL)->default_value(TTL),
+     "Time To Live of the multicast messages. Default = '{}'.");
+  }
+  
   boost::program_options::variables_map vm;
   try {
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -150,6 +197,7 @@ int main(int argc, const char *argv[]) {
 
   if (vm.count("buffer_size")) {
     splitter_ptr->SetBufferSize(vm["buffer_size"].as<int>());
+    TRACE("Buffer size = " << splitter_ptr->GetBufferSize());
   }
 
   if (vm.count("channel")) {
@@ -164,8 +212,8 @@ int main(int argc, const char *argv[]) {
     splitter_ptr->SetHeaderSize(vm["header_size"].as<int>());
   }
 
-  if (vm.count("port")) {
-    splitter_ptr->SetPort(vm["port"].as<int>());
+  if (vm.count("team_port")) {
+    splitter_ptr->SetPort(vm["team_port"].as<int>());
   }
 
   if (vm.count("source_addr")) {
@@ -177,16 +225,16 @@ int main(int argc, const char *argv[]) {
   }
 
   // Parameters if splitter is not IMS
-  if (HasParameter(vm, "max_chunk_loss", p2psp::Common::kDBS)) {
+  if (HasParameter(vm, "max_number_of_chunk_loss", p2psp::Common::kDBS)) {
     std::shared_ptr<p2psp::SplitterDBS> splitter_dbs =
         std::static_pointer_cast<p2psp::SplitterDBS>(splitter_ptr);
-    splitter_dbs->SetMaxChunkLoss(vm["max_chunk_loss"].as<int>());
+    splitter_dbs->SetMaxNumberOfChunkLoss(vm["max_number_of_chunk_loss"].as<int>());
   }
 
-  if (HasParameter(vm, "max_number_of_monitor_peers", p2psp::Common::kDBS)) {
+  if (HasParameter(vm, "max_number_of_monitorss", p2psp::Common::kDBS)) {
     std::shared_ptr<p2psp::SplitterDBS> splitter_dbs =
         std::static_pointer_cast<p2psp::SplitterDBS>(splitter_ptr);
-    splitter_dbs->SetMonitorNumber(vm["max_number_of_monitor_peers"].as<int>());
+    splitter_dbs->SetMaxNumberOfMonitors(vm["max_number_of_monitors"].as<int>());
   }
 
   // Parameters if STRPE
@@ -253,7 +301,7 @@ int main(int argc, const char *argv[]) {
         // _SET_COLOR(_RED);
 
         LOG(splitter_dbs->GetLoss(*it) << "/" << chunks_sendto << " "
-                                       << splitter_dbs->GetMaxChunkLoss());
+                                       << splitter_dbs->GetMaxNumberOfChunkLoss());
 
         if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
           // _SET_COLOR(_YELLOW);
