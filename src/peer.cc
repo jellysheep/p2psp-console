@@ -24,6 +24,38 @@
 
 namespace p2psp {
 
+  class Player: public PeerIMS {
+
+    void WaitForThePlayer() {
+      std::string port = std::to_string(player_port_);
+      ip::tcp::endpoint endpoint(ip::tcp::v4(), player_port_);
+
+      acceptor_.open(endpoint.protocol());
+      acceptor_.set_option(ip::tcp::acceptor::reuse_address(true));
+      acceptor_.bind(endpoint);
+      acceptor_.listen();
+
+      TRACE("Waiting for the player at (" << endpoint.address().to_string() << ","
+	    << std::to_string(endpoint.port())
+	    << ")");
+      acceptor_.accept(player_socket_);
+
+      TRACE("The player is ("
+	    << player_socket_.remote_endpoint().address().to_string() << ","
+	    << std::to_string(player_socket_.remote_endpoint().port()) << ")");
+    }
+
+    void PlayChunk(int chunk) {
+      try {
+	write(player_socket_, buffer(chunks_[chunk % buffer_size_].data));
+      } catch (std::exception e) {
+	TRACE("Player disconnected!");
+	player_alive_ = false;
+      }
+    }
+
+  };
+
   int run(int argc, const char* argv[]) throw(boost::system::system_error) {
     // TODO: Format default options
     boost::format format("Defaut = %5i");
@@ -38,10 +70,7 @@ namespace p2psp {
       p2psp::PeerIMS ims;
       uint16_t player_port = ims.GetPlayerPort();
       
-      std::string splitter_addr = ims.GetSplitterAddr().to_string(); /*{
-	x = ims.GetSplitterAddr();
-	splitter_addr = x.from_stream();
-	}*/
+      std::string splitter_addr = ims.GetSplitterAddr().to_string();
       uint16_t splitter_port = ims.GetSplitterPort();
       
       p2psp::PeerDBS dbs;
@@ -197,7 +226,7 @@ namespace p2psp {
 
     peer->WaitForThePlayer();
     peer->ConnectToTheSplitter();
-    peer->ReceiveTheMcasteEndpoint();
+    peer->ReceiveTheMcastEndpoint();
     peer->ReceiveTheHeaderSize();
     peer->ReceiveTheChunkSize();
     peer->ReceiveTheHeader();
