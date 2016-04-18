@@ -14,11 +14,15 @@
 #include "../lib/p2psp/src/core/splitter_dbs.h"
 #include "../lib/p2psp/src/core/splitter_acs.h"
 #include "../lib/p2psp/src/core/splitter_lrs.h"
-#include "../lib/p2psp/src/core/splitter_strpe.h"
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <signal.h>
-#include "../lib/p2psp/src/util/trace.h"
+//#include "../lib/p2psp/src/util/trace.h"
+
+#define LOG(a)      {}
+#define LOGC(c, a)  {}
+#define ERROR(a)    {}
+#define TRACE(a)    {}
 
 // TODO: LOG fails if splitter is defined outside the main
 // p2psp::SplitterSTRPE splitter;
@@ -178,7 +182,7 @@ int main(int argc, const char *argv[]) {
 
   is_IMS_only = false;
   if (vm.count("strpe")) {
-    splitter_ptr.reset(new p2psp::SplitterSTRPE());
+    //splitter_ptr.reset(new p2psp::SplitterSTRPE());
   } else if (vm.count("LRS")) {
     splitter_ptr.reset(new p2psp::SplitterLRS());
   } else if (vm.count("ACS")) {
@@ -235,13 +239,14 @@ int main(int argc, const char *argv[]) {
   }
 
   // Parameters if STRPE
+  /*
   if (HasParameter(vm, "strpe_log", p2psp::Common::kSTRPE)) {
     std::shared_ptr<p2psp::SplitterSTRPE> splitter_strpe =
       std::static_pointer_cast<p2psp::SplitterSTRPE>(splitter_ptr);
     splitter_strpe->SetLogging(true);
     splitter_strpe->SetLogFile(vm["strpe_log"].as<std::string>());
   }
-
+  */
   splitter_ptr->Start();
 
   LOG("         | Received  | Sent      | Number       losses/ losses");
@@ -283,7 +288,7 @@ int main(int argc, const char *argv[]) {
     kbps_recvfrom = (chunks_recvfrom * splitter_ptr->GetChunkSize() * 8) / 1000;
     last_sendto_counter = splitter_ptr->GetSendToCounter();
     last_recvfrom_counter = splitter_ptr->GetRecvFromCounter();
-
+    
     LOG("|" << kbps_recvfrom << "|" << kbps_sendto << "|");
     // LOG(_SET_COLOR(_CYAN));
 
@@ -291,24 +296,26 @@ int main(int argc, const char *argv[]) {
       peer_list = splitter_dbs->GetPeerList();
       LOG("Size peer list: " << peer_list.size());
 
-      std::vector<boost::asio::ip::udp::endpoint>::iterator it;
-      for (it = peer_list.begin(); it != peer_list.end(); ++it) {
-        // _SET_COLOR(_BLUE);
-        LOG("Peer: " << *it);
-        // _SET_COLOR(_RED);
-
-        LOG(splitter_dbs->GetLoss(*it) << "/" << chunks_sendto << " "
-	    << splitter_dbs->GetMaxNumberOfChunkLoss());
-
-        if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
+      if (peer_list.size()>0){
+	std::vector<boost::asio::ip::udp::endpoint>::iterator it;
+	for (it = peer_list.begin(); it != peer_list.end(); ++it) {
+	  // _SET_COLOR(_BLUE);
+	  LOG("Peer: " << *it);
+	  // _SET_COLOR(_RED);
+	  
+	  LOG(splitter_dbs->GetLoss(*it) << "/" << chunks_sendto << " "
+	      << splitter_dbs->GetMaxNumberOfChunkLoss());
+	  
+	  if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
           // _SET_COLOR(_YELLOW);
-          LOG(splitter_acs->GetPeriod(*it));
-          // _SET_COLOR(_PURPLE)
-          LOG((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
-               splitter_acs->GetChunkSize() * 8) /
-              1000);
-          splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
-        }
+	    LOG(splitter_acs->GetPeriod(*it));
+	    // _SET_COLOR(_PURPLE)
+	    LOG((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
+		 splitter_acs->GetChunkSize() * 8) /
+		1000);
+	    splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
+	  }
+	}
       }
     }
   }
