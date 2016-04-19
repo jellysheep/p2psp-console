@@ -48,7 +48,7 @@ void HandlerEndOfExecution() {
   boost::asio::ip::tcp::socket socket(io_service_);
   boost::asio::ip::tcp::endpoint endpoint(
       boost::asio::ip::address::from_string("127.0.0.1"),
-      splitter_ptr->GetPort());
+      splitter_ptr->GetTeamPort());
 
   socket.connect(endpoint, ec);
 
@@ -89,7 +89,7 @@ int main(int argc, const char *argv[]) {
     int chunk_size = ims.GetChunkSize();
     int header_size = ims.GetHeaderSize();
     std::string mcast_addr = ims.GetMcastAddr();
-    int team_port = ims.GetPort(); // GetTeamPort()
+    int team_port = ims.GetTeamPort(); // GetTeamPort()
     std::string source_addr = ims.GetSourceAddr();
     int source_port = ims.GetSourcePort();
     int TTL = ims.GetTTL();
@@ -214,7 +214,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (vm.count("team_port")) {
-    splitter_ptr->SetPort(vm["team_port"].as<int>());
+    splitter_ptr->SetTeamPort(vm["team_port"].as<int>());
   }
 
   if (vm.count("source_addr")) {
