@@ -14,6 +14,7 @@
 #include "../lib/p2psp/src/core/splitter_dbs.h"
 #include "../lib/p2psp/src/core/splitter_acs.h"
 #include "../lib/p2psp/src/core/splitter_lrs.h"
+#include "../lib/p2psp/src/core/splitter_nts.h"
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <signal.h>
@@ -82,7 +83,7 @@ int main(int argc, const char *argv[]) {
 	 "Parameters");
 
   {
-  
+
     p2psp::SplitterIMS ims;
     int buffer_size = ims.GetBufferSize();
     std::string channel = ims.GetChannel();
@@ -162,7 +163,7 @@ int main(int argc, const char *argv[]) {
        "TTL", boost::program_options::value<int>(&TTL)->default_value(TTL),
        "Time To Live of the multicast messages. Default = '{}'.");
   }
-  
+
   boost::program_options::variables_map vm;
   try {
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -183,12 +184,12 @@ int main(int argc, const char *argv[]) {
   is_IMS_only = false;
   if (vm.count("strpe")) {
     //splitter_ptr.reset(new p2psp::SplitterSTRPE());
+  } else if (vm.count("NTS")) {
+    splitter_ptr.reset(new p2psp::SplitterNTS());
   } else if (vm.count("LRS")) {
     splitter_ptr.reset(new p2psp::SplitterLRS());
   } else if (vm.count("ACS")) {
     splitter_ptr.reset(new p2psp::SplitterACS());
-    // } else if (vm.count("NTS")) {
-    //  splitter_ptr.reset(new p2psp::SplitterNTS());
   } else if (vm.count("IMS")) {
     is_IMS_only = true;
     splitter_ptr.reset(new p2psp::SplitterIMS());
@@ -288,7 +289,7 @@ int main(int argc, const char *argv[]) {
     kbps_recvfrom = (chunks_recvfrom * splitter_ptr->GetChunkSize() * 8) / 1000;
     last_sendto_counter = splitter_ptr->GetSendToCounter();
     last_recvfrom_counter = splitter_ptr->GetRecvFromCounter();
-    
+
     LOG("|" << kbps_recvfrom << "|" << kbps_sendto << "|");
     // LOG(_SET_COLOR(_CYAN));
 
@@ -302,10 +303,10 @@ int main(int argc, const char *argv[]) {
 	  // _SET_COLOR(_BLUE);
 	  LOG("Peer: " << *it);
 	  // _SET_COLOR(_RED);
-	  
+
 	  LOG(splitter_dbs->GetLoss(*it) << "/" << chunks_sendto << " "
 	      << splitter_dbs->GetMaxNumberOfChunkLoss());
-	  
+
 	  if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
           // _SET_COLOR(_YELLOW);
 	    LOG(splitter_acs->GetPeriod(*it));
