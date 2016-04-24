@@ -19,33 +19,33 @@ echo $0: parsing: $@
 
 while getopts "d:a:p:t:?" opt; do
     case ${opt} in
-	d)
-	    MAX_CHUNK_DEBT="${OPTARG}"
-	    echo "MAX_CHUNK_DEBT="$MAX_CHUNK_DEBT
-	    ;;
-	a)
-	    SPLITTER_ADDR="${OPTARG}"
-	    ;;
-	p)
-	    SPLITTER_PORT="${OPTARG}"
-	    ;;
-	t)
-	    TEAM_PORT="${OPTARG}"
-	    ;;
-	?)
-	    usage
-	    exit 0
-	    ;;
-	\?)
-	    echo "Invalid option: -${OPTARG}" >&2
-	    usage
-	    exit 1
-	    ;;
-	:)
-	    echo "Option -${OPTARG} requires an argument." >&2
-	    usage
-	    exit 1
-	    ;;
+        d)
+            MAX_CHUNK_DEBT="${OPTARG}"
+            echo "MAX_CHUNK_DEBT="$MAX_CHUNK_DEBT
+            ;;
+        a)
+            SPLITTER_ADDR="${OPTARG}"
+            ;;
+        p)
+            SPLITTER_PORT="${OPTARG}"
+            ;;
+        t)
+            TEAM_PORT="${OPTARG}"
+            ;;
+        ?)
+            usage
+            exit 0
+            ;;
+        \?)
+            echo "Invalid option: -${OPTARG}" >&2
+            usage
+            exit 1
+            ;;
+        :)
+            echo "Option -${OPTARG} requires an argument." >&2
+            usage
+            exit 1
+            ;;
     esac
 done
 

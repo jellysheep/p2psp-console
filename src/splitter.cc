@@ -78,9 +78,9 @@ int main(int argc, const char *argv[]) {
   // Argument Parser
   boost::program_options::options_description
     desc("This is the splitter node of a P2PSP team.\n"
-	 "The splitter is in charge of defining the Set or Rules (SoR) that will control the team. \n"
-	 "By default, DBS (unicast transmissions) will be used.\n"
-	 "Parameters");
+         "The splitter is in charge of defining the Set or Rules (SoR) that will control the team. \n"
+         "By default, DBS (unicast transmissions) will be used.\n"
+         "Parameters");
 
   {
 
@@ -298,25 +298,25 @@ int main(int argc, const char *argv[]) {
       LOG("Size peer list: " << peer_list.size());
 
       if (peer_list.size()>0){
-	std::vector<boost::asio::ip::udp::endpoint>::iterator it;
-	for (it = peer_list.begin(); it != peer_list.end(); ++it) {
-	  // _SET_COLOR(_BLUE);
-	  LOG("Peer: " << *it);
-	  // _SET_COLOR(_RED);
+        std::vector<boost::asio::ip::udp::endpoint>::iterator it;
+        for (it = peer_list.begin(); it != peer_list.end(); ++it) {
+          // _SET_COLOR(_BLUE);
+          LOG("Peer: " << *it);
+          // _SET_COLOR(_RED);
 
-	  LOG(splitter_dbs->GetLoss(*it) << "/" << chunks_sendto << " "
-	      << splitter_dbs->GetMaxNumberOfChunkLoss());
+          LOG(splitter_dbs->GetLoss(*it) << "/" << chunks_sendto << " "
+              << splitter_dbs->GetMaxNumberOfChunkLoss());
 
-	  if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
+          if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
           // _SET_COLOR(_YELLOW);
-	    LOG(splitter_acs->GetPeriod(*it));
-	    // _SET_COLOR(_PURPLE)
-	    LOG((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
-		 splitter_acs->GetChunkSize() * 8) /
-		1000);
-	    splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
-	  }
-	}
+            LOG(splitter_acs->GetPeriod(*it));
+            // _SET_COLOR(_PURPLE)
+            LOG((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
+                 splitter_acs->GetChunkSize() * 8) /
+                1000);
+            splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
+          }
+        }
       }
     }
   }
