@@ -54,9 +54,9 @@ echo "Configuration: $configuration"
 echo
 
 # Create table
-result="Peer1\2	"
+result="Peer1\2        "
 for nat in $nat_configs; do
-    result="$result| $nat	"
+    result="$result| $nat        "
 done
 result="$result
 ========"
@@ -182,7 +182,7 @@ $nat1_config "
         done
 
         # Append to result table
-        result="$result	| $((successes*100/(sequential_runs*parallel_runs))) "
+        result="$result        | $((successes*100/(sequential_runs*parallel_runs))) "
 
         # Print result table
         echo; echo

@@ -77,12 +77,12 @@ int main(int argc, const char *argv[]) {
   // Argument Parser
   boost::program_options::options_description
     desc("This is the splitter node of a P2PSP team.\n"
-	 "The splitter is in charge of defining the Set or Rules (SoR) that will control the team. \n"
-	 "By default, DBS (unicast transmissions) will be used.\n"
-	 "Parameters");
+         "The splitter is in charge of defining the Set or Rules (SoR) that will control the team. \n"
+         "By default, DBS (unicast transmissions) will be used.\n"
+         "Parameters");
 
   {
-  
+
     p2psp::SplitterIMS ims;
     int buffer_size = ims.GetBufferSize();
     std::string channel = ims.GetChannel();
@@ -162,7 +162,7 @@ int main(int argc, const char *argv[]) {
        "TTL", boost::program_options::value<int>(&TTL)->default_value(TTL),
        "Time To Live of the multicast messages. Default = '{}'.");
   }
-  
+
   boost::program_options::variables_map vm;
   try {
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -288,7 +288,7 @@ int main(int argc, const char *argv[]) {
     kbps_recvfrom = (chunks_recvfrom * splitter_ptr->GetChunkSize() * 8) / 1000;
     last_sendto_counter = splitter_ptr->GetSendToCounter();
     last_recvfrom_counter = splitter_ptr->GetRecvFromCounter();
-    
+
     LOG("|" << kbps_recvfrom << "|" << kbps_sendto << "|");
     // LOG(_SET_COLOR(_CYAN));
 
@@ -297,25 +297,25 @@ int main(int argc, const char *argv[]) {
       LOG("Size peer list: " << peer_list.size());
 
       if (peer_list.size()>0){
-	std::vector<boost::asio::ip::udp::endpoint>::iterator it;
-	for (it = peer_list.begin(); it != peer_list.end(); ++it) {
-	  // _SET_COLOR(_BLUE);
-	  LOG("Peer: " << *it);
-	  // _SET_COLOR(_RED);
-	  
-	  LOG(splitter_dbs->GetLoss(*it) << "/" << chunks_sendto << " "
-	      << splitter_dbs->GetMaxNumberOfChunkLoss());
-	  
-	  if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
+        std::vector<boost::asio::ip::udp::endpoint>::iterator it;
+        for (it = peer_list.begin(); it != peer_list.end(); ++it) {
+          // _SET_COLOR(_BLUE);
+          LOG("Peer: " << *it);
+          // _SET_COLOR(_RED);
+
+          LOG(splitter_dbs->GetLoss(*it) << "/" << chunks_sendto << " "
+              << splitter_dbs->GetMaxNumberOfChunkLoss());
+
+          if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
           // _SET_COLOR(_YELLOW);
-	    LOG(splitter_acs->GetPeriod(*it));
-	    // _SET_COLOR(_PURPLE)
-	    LOG((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
-		 splitter_acs->GetChunkSize() * 8) /
-		1000);
-	    splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
-	  }
-	}
+            LOG(splitter_acs->GetPeriod(*it));
+            // _SET_COLOR(_PURPLE)
+            LOG((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
+                 splitter_acs->GetChunkSize() * 8) /
+                1000);
+            splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
+          }
+        }
       }
     }
   }

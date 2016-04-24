@@ -36,21 +36,21 @@ namespace p2psp {
       acceptor_.listen();
 
       TRACE("Waiting for the player at (" << endpoint.address().to_string() << ","
-	    << std::to_string(endpoint.port())
-	    << ")");
+            << std::to_string(endpoint.port())
+            << ")");
       acceptor_.accept(player_socket_);
 
       TRACE("The player is ("
-	    << player_socket_.remote_endpoint().address().to_string() << ","
-	    << std::to_string(player_socket_.remote_endpoint().port()) << ")");
+            << player_socket_.remote_endpoint().address().to_string() << ","
+            << std::to_string(player_socket_.remote_endpoint().port()) << ")");
     }
 
     void PlayChunk(int chunk) {
       try {
-	write(player_socket_, buffer(chunks_[chunk % buffer_size_].data));
+        write(player_socket_, buffer(chunks_[chunk % buffer_size_].data));
       } catch (std::exception e) {
-	TRACE("Player disconnected!");
-	player_alive_ = false;
+        TRACE("Player disconnected!");
+        player_alive_ = false;
       }
     }
 
@@ -63,79 +63,79 @@ namespace p2psp {
     // Argument Parser
     boost::program_options::options_description
       desc("This is the peer node of a P2PSP team.\n"
-	   "Parameters");
+           "Parameters");
 
     {
 
       p2psp::PeerIMS ims;
       uint16_t player_port = ims.GetPlayerPort();
-      
+
       std::string splitter_addr = ims.GetSplitterAddr().to_string();
       uint16_t splitter_port = ims.GetSplitterPort();
-      
+
       p2psp::PeerDBS dbs;
       int max_chunk_debt = dbs.GetMaxChunkDebt();
       uint16_t team_port = dbs.GetTeamPort();
 
       //p2psp::PeerNTS nts;
       //int team_port_step = nts.GetTeamPortStep();
-      
+
       // TODO: strpe option should expect a list of arguments, not bool
       desc.add_options()
-	("help,h", "Produce this help message and exits.")
-	("enable_chunk_loss",
-	 boost::program_options::value<std::string>(),
-	 "Forces a lost of chunks.")
-	("max_chunk_debt",
-	 boost::program_options::value<int>(&max_chunk_debt)->default_value(max_chunk_debt),
-	 "Maximum number of times that other peer can not send a chunk to this peer.")
-	("player_port",
-	 boost::program_options::value<uint16_t>(&player_port)->default_value(player_port),
-	 "Port to communicate with the player.")
-	//("team_port_step",
-	// boost::program_options::value<int>(&team_port_step)->default_value(team_port_step),
-	// "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
-	("splitter_addr",
-	 boost::program_options::value<std::string>(&splitter_addr)->default_value(splitter_addr),
-	 "IP address or hostname of the splitter.")
-	("splitter_port",
-	 boost::program_options::value<uint16_t>(&splitter_port)->default_value(splitter_port),
-	 "Listening port of the splitter.")
-	("team_port",
-	 boost::program_options::value<uint16_t>(&team_port)->default_value(team_port),
-	 "Port to communicate with the peers. By default the OS will chose it.")
-	("use_localhost",
-	 "Forces the peer to use localhost instead of the IP of the adapter to connect to the splitter."
-	 "Notice that in this case, peers that run outside of the host will not be able to communicate with this peer.")
-	//"malicious",
-	// boost::program_options::value<bool>()->implicit_value(true),
-	//"Enables the malicious activity for peer.")(
-	//("persistent",
-	// boost::program_options::value<std::string>(&persistent)->default_value(persistent),
-	// "Forces the peer to send poisoned chunks to other peers.")
-	//("on_off_ratio",
-	// boost::program_options::value<int>(&on_off_ratio)->default_value(on_off_ratio),
-	// "Enables on-off attack and sets ratio for on off (from 1 to 100).")
-	//("selective",
-	// boost::program_options::value<std::string>(&selective)->default_value(selective),
-	// "Enables selective attack for given set of peers.")
-	//("bad_mouth",
-	// boost::program_options::value<std::string>(&bad_mouth)->default_value(bad_mouth),
-	// "Enables Bad Mouth attack for given set of peers.")
-	// "trusted", boost::program_options::value<bool>()->implicit_value(true),
-	// "Forces the peer to send hashes of chunks to splitter")(
-	//("checkall",
-	// "Forces the peer to send hashes of every chunks to splitter (works only with trusted option)")
-	// "strpeds", boost::program_options::value<bool>()->implicit_value(true),
-	// "Enables STrPe-DS")(
-	//("strpe_log", "Logging STrPe & STrPe-DS specific data to file.")
-	("monitor",
-	 "The peer is a monitor")
-	("show_buffer",
-	 "Shows the status of the buffer of chunks.");
+        ("help,h", "Produce this help message and exits.")
+        ("enable_chunk_loss",
+         boost::program_options::value<std::string>(),
+         "Forces a lost of chunks.")
+        ("max_chunk_debt",
+         boost::program_options::value<int>(&max_chunk_debt)->default_value(max_chunk_debt),
+         "Maximum number of times that other peer can not send a chunk to this peer.")
+        ("player_port",
+         boost::program_options::value<uint16_t>(&player_port)->default_value(player_port),
+         "Port to communicate with the player.")
+        //("team_port_step",
+        // boost::program_options::value<int>(&team_port_step)->default_value(team_port_step),
+        // "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
+        ("splitter_addr",
+         boost::program_options::value<std::string>(&splitter_addr)->default_value(splitter_addr),
+         "IP address or hostname of the splitter.")
+        ("splitter_port",
+         boost::program_options::value<uint16_t>(&splitter_port)->default_value(splitter_port),
+         "Listening port of the splitter.")
+        ("team_port",
+         boost::program_options::value<uint16_t>(&team_port)->default_value(team_port),
+         "Port to communicate with the peers. By default the OS will chose it.")
+        ("use_localhost",
+         "Forces the peer to use localhost instead of the IP of the adapter to connect to the splitter."
+         "Notice that in this case, peers that run outside of the host will not be able to communicate with this peer.")
+        //"malicious",
+        // boost::program_options::value<bool>()->implicit_value(true),
+        //"Enables the malicious activity for peer.")(
+        //("persistent",
+        // boost::program_options::value<std::string>(&persistent)->default_value(persistent),
+        // "Forces the peer to send poisoned chunks to other peers.")
+        //("on_off_ratio",
+        // boost::program_options::value<int>(&on_off_ratio)->default_value(on_off_ratio),
+        // "Enables on-off attack and sets ratio for on off (from 1 to 100).")
+        //("selective",
+        // boost::program_options::value<std::string>(&selective)->default_value(selective),
+        // "Enables selective attack for given set of peers.")
+        //("bad_mouth",
+        // boost::program_options::value<std::string>(&bad_mouth)->default_value(bad_mouth),
+        // "Enables Bad Mouth attack for given set of peers.")
+        // "trusted", boost::program_options::value<bool>()->implicit_value(true),
+        // "Forces the peer to send hashes of chunks to splitter")(
+        //("checkall",
+        // "Forces the peer to send hashes of every chunks to splitter (works only with trusted option)")
+        // "strpeds", boost::program_options::value<bool>()->implicit_value(true),
+        // "Enables STrPe-DS")(
+        //("strpe_log", "Logging STrPe & STrPe-DS specific data to file.")
+        ("monitor",
+         "The peer is a monitor")
+        ("show_buffer",
+         "Shows the status of the buffer of chunks.");
 
     }
-      
+
     boost::program_options::variables_map vm;
 
     try {
@@ -145,7 +145,7 @@ namespace p2psp {
       std::cout << desc << "\n";
       return 1;
     }
-    
+
     boost::program_options::notify(vm);
 
     if (vm.count("help")) {
@@ -181,8 +181,8 @@ namespace p2psp {
       }*/
 
     if (vm.count("splitter_addr")) {
-      //std::string x = 
-	peer->SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
+      //std::string x =
+        peer->SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
       //peer->SetSplitterAddr(vm["splitter_addr"].as<ip::address>());
     }
 
@@ -240,7 +240,7 @@ namespace p2psp {
       // LOG("Magic flags =" << std::bitset<8>(peer->magic_flags));
       peer->ReceiveTheNumberOfPeers();
       LOG("Number of peers in the team (excluding me) ="
-	  << std::to_string(peer->GetNumberOfPeers()));
+          << std::to_string(peer->GetNumberOfPeers()));
       LOG("Am I a monitor peer? =" << (peer->AmIAMonitor() ? "True" : "False"));
       peer->ListenToTheTeam();
       peer->ReceiveTheListOfPeers();
@@ -250,15 +250,15 @@ namespace p2psp {
       // monitor peer or not (only the first arriving peers are monitors)
 
       if (peer->AmIAMonitor()) {
-	LOG("Monitor DBS enabled");
+        LOG("Monitor DBS enabled");
 
-	// The peer is a monitor. Now it's time to know the sets of rules that
-	// control this team.
+        // The peer is a monitor. Now it's time to know the sets of rules that
+        // control this team.
       } else {
-	LOG("Peer DBS enabled");
+        LOG("Peer DBS enabled");
 
-	// The peer is a normal peer-> Let's know the sets of rules that control
-	// this team.
+        // The peer is a normal peer-> Let's know the sets of rules that control
+        // this team.
       }
 
     } else {
@@ -278,11 +278,11 @@ namespace p2psp {
     LOG("");
     LOG("         |     Received (kbps) |          Sent (kbps) |");
     LOG(
-	"    Time |      Real  Expected |       Real  Expected | Team "
-	"description");
+        "    Time |      Real  Expected |       Real  Expected | Team "
+        "description");
     LOG(
-	"---------+---------------------+----------------------+-----------------"
-	"------------------...");
+        "---------+---------------------+----------------------+-----------------"
+        "------------------...");
 
     int last_chunk_number = peer->GetPlayedChunk();
     int last_sendto_counter = -1;
@@ -305,44 +305,44 @@ namespace p2psp {
     while (peer->IsPlayerAlive()) {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
       kbps_expected_recv = ((peer->GetPlayedChunk() - last_chunk_number) *
-			    peer->GetChunkSize() * 8) / 1000.0f;
+                            peer->GetChunkSize() * 8) / 1000.0f;
       last_chunk_number = peer->GetPlayedChunk();
       kbps_recvfrom = ((peer->GetRecvfromCounter() - last_recvfrom_counter) *
-		       peer->GetChunkSize() * 8) / 1000.0f;
+                       peer->GetChunkSize() * 8) / 1000.0f;
       last_recvfrom_counter = peer->GetRecvfromCounter();
       team_ratio = peer->GetPeerList()->size() / (peer->GetPeerList()->size() + 1.0f);
       kbps_expected_sent = (int)(kbps_expected_recv * team_ratio);
       kbps_sendto = ((peer->GetSendtoCounter() - last_sendto_counter) *
-		     peer->GetChunkSize() * 8) / 1000.0f;
+                     peer->GetChunkSize() * 8) / 1000.0f;
       last_sendto_counter = peer->GetSendtoCounter();
 
       // try:
       if (p2psp::Common::kConsoleMode == false) {
-	/*from gi.repository import GObject
-	  try:
-	  from adapter import speed_adapter
-	  except ImportError as msg:
-	  pass
-	  GObject.idle_add(speed_adapter.update_widget,str(kbps_recvfrom) << ' kbps'
-	  ,str(kbps_sendto) << ' kbps'
-	  ,str(len(peer->peer_list)+1))
-	  except Exception as msg:
-	  pass*/
+        /*from gi.repository import GObject
+          try:
+          from adapter import speed_adapter
+          except ImportError as msg:
+          pass
+          GObject.idle_add(speed_adapter.update_widget,str(kbps_recvfrom) << ' kbps'
+          ,str(kbps_sendto) << ' kbps'
+          ,str(len(peer->peer_list)+1))
+          except Exception as msg:
+          pass*/
       }
 
       if (kbps_recvfrom > 0 and kbps_expected_recv > 0) {
-	// nice = 100.0 / (kbps_expected_recv / kbps_recvfrom) *
-	// (peer->GetPeerList()->size() + 1.0f);
+        // nice = 100.0 / (kbps_expected_recv / kbps_recvfrom) *
+        // (peer->GetPeerList()->size() + 1.0f);
       } else {
-	// nice = 0.0f;
+        // nice = 0.0f;
       }
 
       LOG("|");
 
       if (kbps_expected_recv < kbps_recvfrom) {
-	LOG(_SET_COLOR(_RED));
+        LOG(_SET_COLOR(_RED));
       } else if (kbps_expected_recv > kbps_recvfrom) {
-	LOG(_SET_COLOR(_GREEN));
+        LOG(_SET_COLOR(_GREEN));
       }
 
       // TODO: format
@@ -352,9 +352,9 @@ namespace p2psp {
       //#sys.stdout.write(Color.none)
 
       if (kbps_expected_sent > kbps_sendto) {
-	LOG(_SET_COLOR(_RED));
+        LOG(_SET_COLOR(_RED));
       } else if (kbps_expected_sent < kbps_sendto) {
-	LOG(_SET_COLOR(_GREEN));
+        LOG(_SET_COLOR(_GREEN));
       }
       // TODO: format
       LOG(kbps_sendto);
@@ -364,24 +364,24 @@ namespace p2psp {
       LOG(peer->GetPeerList()->size());
       counter = 0;
       for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = peer->GetPeerList()->begin(); p != peer->GetPeerList()->end(); ++p) {
-	if (counter < 5) {
-	  LOG("(" << p->address().to_string() << "," << std::to_string(p->port())
-	      << ")");
-	  counter++;
-	} else {
-	  break;
-	  LOG("");
-	}
+        if (counter < 5) {
+          LOG("(" << p->address().to_string() << "," << std::to_string(p->port())
+              << ")");
+          counter++;
+        } else {
+          break;
+          LOG("");
+        }
       }
 
       // try:
       if (p2psp::Common::kConsoleMode == false) {
-	/*GObject.idle_add(speed_adapter.update_widget,str(0)+'
-	  kbps',str(0)+' kbps',str(0))
-	  except  Exception as msg:
-	  pass
-	  }
-	*/
+        /*GObject.idle_add(speed_adapter.update_widget,str(0)+'
+          kbps',str(0)+' kbps',str(0))
+          except  Exception as msg:
+          pass
+          }
+        */
       }
     }
 

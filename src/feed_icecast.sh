@@ -30,35 +30,35 @@ echo $0: parsing: $@
 
 while getopts "c:w:a:p:v:?" opt; do
     case ${opt} in
-	c)
-	    channel="${OPTARG}"
-	    ;;
-	w)
-	    password="${OPTARG}"
-	    ;;
-	a)
-	    icecast_name="${OPTARG}"
-	    ;;
-	p)
-	    icecast_port="${OPTARG}"
-	    ;;
-	v)
-	    video="${OPTARG}"
-	    ;;
-	?)
-	    usage
-	    exit 0
-	    ;;
-	\?)
-	    echo "Invalid option: -${OPTARG}" >&2
-	    usage
-	    exit 1
-	    ;;
-	:)
-	    echo "Option -${OPTARG} requires an argument." >&2
-	    usage
-	    exit 1
-	    ;;
+        c)
+            channel="${OPTARG}"
+            ;;
+        w)
+            password="${OPTARG}"
+            ;;
+        a)
+            icecast_name="${OPTARG}"
+            ;;
+        p)
+            icecast_port="${OPTARG}"
+            ;;
+        v)
+            video="${OPTARG}"
+            ;;
+        ?)
+            usage
+            exit 0
+            ;;
+        \?)
+            echo "Invalid option: -${OPTARG}" >&2
+            usage
+            exit 1
+            ;;
+        :)
+            echo "Option -${OPTARG} requires an argument." >&2
+            usage
+            exit 1
+            ;;
     esac
 done
 

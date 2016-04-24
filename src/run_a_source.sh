@@ -17,32 +17,32 @@ echo $0: parsing: $@
 
 while getopts "c:o:v:?" opt; do
     case ${opt} in
-	c)
-	    CHANNEL="${OPTARG}"
-	    echo "CHANNEL="$CHANNEL
-	    ;;
-	o)
-	    PORT="${OPTARG}"
-	    echo "PORT="$PORT
-	    ;;
-	v)
-	    VIDEO="${OPTARG}"
-	    echo "VIDEO="$VIDEO
-	    ;;
-	?)
-	    usage
-	    exit 0
-	    ;;
-	\?)
-	    echo "Invalid option: -${OPTARG}" >&2
-	    usage
-	    exit 1
-	    ;;
-	:)
-	    echo "Option -${OPTARG} requires an argument." >&2
-	    usage
-	    exit 1
-	    ;;
+        c)
+            CHANNEL="${OPTARG}"
+            echo "CHANNEL="$CHANNEL
+            ;;
+        o)
+            PORT="${OPTARG}"
+            echo "PORT="$PORT
+            ;;
+        v)
+            VIDEO="${OPTARG}"
+            echo "VIDEO="$VIDEO
+            ;;
+        ?)
+            usage
+            exit 0
+            ;;
+        \?)
+            echo "Invalid option: -${OPTARG}" >&2
+            usage
+            exit 1
+            ;;
+        :)
+            echo "Option -${OPTARG} requires an argument." >&2
+            usage
+            exit 1
+            ;;
     esac
 done
 
