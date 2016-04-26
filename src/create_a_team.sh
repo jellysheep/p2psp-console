@@ -70,88 +70,88 @@ echo $0: parsing: $@
 
 while getopts "h:b:c:k:d:l:i:s:o:a:p:mr:t:f:y:w:?" opt; do
     case ${opt} in
-	h)
-	    HEADER_SIZE="${OPTARG}"
-	    echo "HEADER_SIZE="$HEADER_SIZE
-	    ;;
-	b)
-	    BUFFER_SIZE="${OPTARG}"
-	    echo "BUFFER_SIZE="$BUFFER_SIZE
-	    ;;
-	c)
-	    CHANNEL="${OPTARG}"
-	    echo "CHANNEL="$CHANNEL
-	    ;;
-	k)
-	    CHUNK_SIZE="${OPTARG}"
-	    echo "CHUNK_SIZE="$CHUNK_SIZE
-	    ;;
-	d)
-	    MAX_CHUNK_DEBT="${OPTARG}"
-	    echo "MAX_CHUNK_DEBT="$MAX_CHUNK_DEBT
-	    ;;
-	l)
-	    MAX_CHUNK_LOSS="${OPTARG}"
-	    echo "MAX_CHUNK_LOSS="$MAX_CHUNK_LOSS
-	    ;;
-	i)
-	    ITERATIONS="${OPTARG}"
-	    echo "ITERATIONS="$ITERATIONS
-	    ;;
-	s)
-	    SOURCE_ADDR="${OPTARG}"
-	    echo "SOURCE_ADDR="$SOURCE_ADDR
-	    ;;
-	o)
-	    SOURCE_PORT="${OPTARG}"
-	    echo "SOURCE_PORT="$SOURCE_PORT
-	    ;;
-	a)
-	    SPLITTER_ADDR="${OPTARG}"
-	    echo "SPLITTER_ADDR="$SPLITTER_ADDR
-	    ;;
-	p)
-	    SPLITTER_PORT="${OPTARG}"
-	    echo "SPLITTER_PORT="$SPLITTER_PORT
-	    ;;
-	m)
-	    MCAST="--mcast"
-	    echo "Using IP multicast"
-	    ;;
-	r)
-	    MCAST_ADDR="${OPTARG}"
-	    echo "MCAST_ADDR="$MCAST_ADDR
-	    ;;
-	t)
-	    TEAM_PORT="${OPTARG}"
-	    echo "TEAM_PORT="$TEAM_PORT
-	    ;;
-	f)
-	    MAX_LIFE="${OPTARG}"
-	    echo "MAX_LIFE="$MAX_LIFE
-	    ;;
-	y)
-	    BIRTHDAY_PERIOD="${OPTARG}"
-	    echo "BIRTHDAY_PERIOD="$BIRTHDAY_PERIOD
-	    ;;
-	w)
-	    CHUNK_LOSS_PERIOD="${OPTARG}"
-	    echo "CHUNK_LOSS_PERIOD="$CHUNK_LOSS_PERIOD
-	    ;;
-	?)
-	    usage
-	    exit 0
-	    ;;
-	\?)
-	    echo "Invalid option: -${OPTARG}" >&2
-	    usage
-	    exit 1
-	    ;;
-	:)
-	    echo "Option -${OPTARG} requires an argument." >&2
-	    usage
-	    exit 1
-	    ;;
+        h)
+            HEADER_SIZE="${OPTARG}"
+            echo "HEADER_SIZE="$HEADER_SIZE
+            ;;
+        b)
+            BUFFER_SIZE="${OPTARG}"
+            echo "BUFFER_SIZE="$BUFFER_SIZE
+            ;;
+        c)
+            CHANNEL="${OPTARG}"
+            echo "CHANNEL="$CHANNEL
+            ;;
+        k)
+            CHUNK_SIZE="${OPTARG}"
+            echo "CHUNK_SIZE="$CHUNK_SIZE
+            ;;
+        d)
+            MAX_CHUNK_DEBT="${OPTARG}"
+            echo "MAX_CHUNK_DEBT="$MAX_CHUNK_DEBT
+            ;;
+        l)
+            MAX_CHUNK_LOSS="${OPTARG}"
+            echo "MAX_CHUNK_LOSS="$MAX_CHUNK_LOSS
+            ;;
+        i)
+            ITERATIONS="${OPTARG}"
+            echo "ITERATIONS="$ITERATIONS
+            ;;
+        s)
+            SOURCE_ADDR="${OPTARG}"
+            echo "SOURCE_ADDR="$SOURCE_ADDR
+            ;;
+        o)
+            SOURCE_PORT="${OPTARG}"
+            echo "SOURCE_PORT="$SOURCE_PORT
+            ;;
+        a)
+            SPLITTER_ADDR="${OPTARG}"
+            echo "SPLITTER_ADDR="$SPLITTER_ADDR
+            ;;
+        p)
+            SPLITTER_PORT="${OPTARG}"
+            echo "SPLITTER_PORT="$SPLITTER_PORT
+            ;;
+        m)
+            MCAST="--mcast"
+            echo "Using IP multicast"
+            ;;
+        r)
+            MCAST_ADDR="${OPTARG}"
+            echo "MCAST_ADDR="$MCAST_ADDR
+            ;;
+        t)
+            TEAM_PORT="${OPTARG}"
+            echo "TEAM_PORT="$TEAM_PORT
+            ;;
+        f)
+            MAX_LIFE="${OPTARG}"
+            echo "MAX_LIFE="$MAX_LIFE
+            ;;
+        y)
+            BIRTHDAY_PERIOD="${OPTARG}"
+            echo "BIRTHDAY_PERIOD="$BIRTHDAY_PERIOD
+            ;;
+        w)
+            CHUNK_LOSS_PERIOD="${OPTARG}"
+            echo "CHUNK_LOSS_PERIOD="$CHUNK_LOSS_PERIOD
+            ;;
+        ?)
+            usage
+            exit 0
+            ;;
+        \?)
+            echo "Invalid option: -${OPTARG}" >&2
+            usage
+            exit 1
+            ;;
+        :)
+            echo "Option -${OPTARG} requires an argument." >&2
+            usage
+            exit 1
+            ;;
     esac
 done
 
