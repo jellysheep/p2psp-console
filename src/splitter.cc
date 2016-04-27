@@ -82,7 +82,7 @@ int main(int argc, const char *argv[]) {
          "By default, DBS (unicast transmissions) will be used.\n"
          "Parameters");
 
-  {
+  //~ {
 
     int buffer_size = p2psp::SplitterIMS::GetDefaultBufferSize();
     std::string channel = p2psp::SplitterIMS::GetDefaultChannel();
@@ -160,7 +160,7 @@ int main(int argc, const char *argv[]) {
       (
        "TTL", boost::program_options::value<int>()->default_value(TTL),
        "Time To Live of the multicast messages. Default = '{}'.");
-  }
+  //~ }
 
   boost::program_options::variables_map vm;
   try {

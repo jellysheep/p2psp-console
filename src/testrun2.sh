@@ -34,20 +34,20 @@ trap stop_processes EXIT
 
 ssh $user@$splitter unbuffer "$dir/splitter" --source_addr "$local_source_addr" \
     --source_port "$local_source_port" --channel "$src_channel" \
-    --port "$splitter_port" --NTS --max_number_of_monitor_peers 2 \
+    --team_port "$splitter_port" --NTS --max_number_of_monitors 2 \
     | sed -n -e 's_.*_\x1b[93mSplitter: \0\x1b[0m_p' &
 sleep 3
 ssh $user@$splitter unbuffer "$dir/peer" --splitter_addr "$splitter" \
-    --splitter_port "$splitter_port" --port "$peer_port" --monitor \
+    --splitter_port "$splitter_port" --team_port "$peer_port" --monitor \
     | sed -n -e 's_.*_\x1b[92mMonitor1: \0\x1b[0m_p' &
 ssh $user@$server unbuffer "$dir/peer" --splitter_addr "$splitter" \
-    --splitter_port "$splitter_port" --port "$peer_port" --monitor \
+    --splitter_port "$splitter_port" --team_port "$peer_port" --monitor \
     | sed -n -e 's_.*_\x1b[96mMonitor2: \0\x1b[0m_p' &
 ssh $user@$pc1 unbuffer "$dir/peer" --splitter_addr "$splitter" \
-    --splitter_port "$splitter_port" --port "$peer_port" --port_step 1 \
+    --splitter_port "$splitter_port" --team_port "$peer_port" --source_port_step 1 \
     | sed -n -e 's_.*_\x1b[94mPeer1:    \0\x1b[0m_p' &
 ssh $user@$pc2 unbuffer "$dir/peer" --splitter_addr "$splitter" \
-    --splitter_port "$splitter_port" --port "$peer_port" --port_step 1 \
+    --splitter_port "$splitter_port" --team_port "$peer_port" --source_port_step 1 \
     | sed -n -e 's_.*_\x1b[95mPeer2:    \0\x1b[0m_p' &
 sleep 2
 vlc "http://$splitter:9999" --aout none 2>/dev/null &
