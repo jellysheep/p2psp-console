@@ -233,7 +233,7 @@ int main(int argc, const char *argv[]) {
     splitter_dbs->SetMaxNumberOfChunkLoss(vm["max_number_of_chunk_loss"].as<int>());
   }
 
-  if (HasParameter(vm, "max_number_of_monitorss", p2psp::Common::kDBS)) {
+  if (HasParameter(vm, "max_number_of_monitors", p2psp::Common::kDBS)) {
     std::shared_ptr<p2psp::SplitterDBS> splitter_dbs =
       std::static_pointer_cast<p2psp::SplitterDBS>(splitter_ptr);
     splitter_dbs->SetMaxNumberOfMonitors(vm["max_number_of_monitors"].as<int>());
