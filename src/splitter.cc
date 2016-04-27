@@ -207,7 +207,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (vm.count("chunk_size")) {
-    splitter_ptr->SetBufferSize(vm["chunk_size"].as<int>());
+    splitter_ptr->SetChunkSize(vm["chunk_size"].as<int>());
   }
 
   if (vm.count("header_size")) {
