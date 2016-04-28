@@ -68,8 +68,6 @@ namespace p2psp {
       desc("This is the peer node of a P2PSP team.\n"
            "Parameters");
 
-    int source_port_step = 0;
-
     {
 
       uint16_t player_port = p2psp::PeerIMS::GetDefaultPlayerPort();
@@ -79,6 +77,8 @@ namespace p2psp {
 
       int max_chunk_debt = p2psp::PeerDBS::GetDefaultMaxChunkDebt();
       uint16_t team_port = p2psp::PeerDBS::GetDefaultTeamPort();
+
+      int source_port_step = 0;
 
       // TODO: strpe option should expect a list of arguments, not bool
       desc.add_options()
@@ -93,7 +93,7 @@ namespace p2psp {
          boost::program_options::value<uint16_t>()->default_value(player_port),
          "Port to communicate with the player.")
         ("source_port_step",
-         boost::program_options::value<int>(&source_port_step)->default_value(source_port_step),
+         boost::program_options::value<int>()->default_value(source_port_step),
          "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
         ("splitter_addr",
          boost::program_options::value<std::string>()->default_value(splitter_addr),
