@@ -67,15 +67,13 @@ namespace p2psp {
 
     {
 
-      p2psp::PeerIMS ims;
-      uint16_t player_port = ims.GetPlayerPort();
+      uint16_t player_port = p2psp::PeerIMS::GetDefaultPlayerPort();
 
-      std::string splitter_addr = ims.GetSplitterAddr().to_string();
-      uint16_t splitter_port = ims.GetSplitterPort();
+      std::string splitter_addr = p2psp::PeerIMS::GetDefaultSplitterAddr().to_string();
+      uint16_t splitter_port = p2psp::PeerIMS::GetDefaultSplitterPort();
 
-      p2psp::PeerDBS dbs;
-      int max_chunk_debt = dbs.GetMaxChunkDebt();
-      uint16_t team_port = dbs.GetTeamPort();
+      int max_chunk_debt = p2psp::PeerDBS::GetDefaultMaxChunkDebt();
+      uint16_t team_port = p2psp::PeerDBS::GetDefaultTeamPort();
 
       //p2psp::PeerNTS nts;
       //int team_port_step = nts.GetTeamPortStep();
@@ -87,22 +85,22 @@ namespace p2psp {
          boost::program_options::value<std::string>(),
          "Forces a lost of chunks.")
         ("max_chunk_debt",
-         boost::program_options::value<int>(&max_chunk_debt)->default_value(max_chunk_debt),
+         boost::program_options::value<int>()->default_value(max_chunk_debt),
          "Maximum number of times that other peer can not send a chunk to this peer.")
         ("player_port",
-         boost::program_options::value<uint16_t>(&player_port)->default_value(player_port),
+         boost::program_options::value<uint16_t>()->default_value(player_port),
          "Port to communicate with the player.")
         //("team_port_step",
         // boost::program_options::value<int>(&team_port_step)->default_value(team_port_step),
         // "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
         ("splitter_addr",
-         boost::program_options::value<std::string>(&splitter_addr)->default_value(splitter_addr),
+         boost::program_options::value<std::string>()->default_value(splitter_addr),
          "IP address or hostname of the splitter.")
         ("splitter_port",
-         boost::program_options::value<uint16_t>(&splitter_port)->default_value(splitter_port),
+         boost::program_options::value<uint16_t>()->default_value(splitter_port),
          "Listening port of the splitter.")
         ("team_port",
-         boost::program_options::value<uint16_t>(&team_port)->default_value(team_port),
+         boost::program_options::value<uint16_t>()->default_value(team_port),
          "Port to communicate with the peers. By default the OS will chose it.")
         ("use_localhost",
          "Forces the peer to use localhost instead of the IP of the adapter to connect to the splitter."
@@ -111,16 +109,16 @@ namespace p2psp {
         // boost::program_options::value<bool>()->implicit_value(true),
         //"Enables the malicious activity for peer.")(
         //("persistent",
-        // boost::program_options::value<std::string>(&persistent)->default_value(persistent),
+        // boost::program_options::value<std::string>()->default_value(persistent),
         // "Forces the peer to send poisoned chunks to other peers.")
         //("on_off_ratio",
-        // boost::program_options::value<int>(&on_off_ratio)->default_value(on_off_ratio),
+        // boost::program_options::value<int>()->default_value(on_off_ratio),
         // "Enables on-off attack and sets ratio for on off (from 1 to 100).")
         //("selective",
-        // boost::program_options::value<std::string>(&selective)->default_value(selective),
+        // boost::program_options::value<std::string>()->default_value(selective),
         // "Enables selective attack for given set of peers.")
         //("bad_mouth",
-        // boost::program_options::value<std::string>(&bad_mouth)->default_value(bad_mouth),
+        // boost::program_options::value<std::string>()->default_value(bad_mouth),
         // "Enables Bad Mouth attack for given set of peers.")
         // "trusted", boost::program_options::value<bool>()->implicit_value(true),
         // "Forces the peer to send hashes of chunks to splitter")(
