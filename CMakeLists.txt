@@ -4,13 +4,20 @@ cmake_minimum_required(VERSION 2.8)
 option(BUILD_PEER "Build the peer" ON)
 option(BUILD_SPLITTER "Build the splitter" ON)
 
+option(BUILD_WITH_CLANG "Build using the Clang compiler" OFF)
+
+if(BUILD_WITH_CLANG)
+  set(CMAKE_C_COMPILER clang)
+  set(CMAKE_CXX_COMPILER clang++)
+endif()
+
 # Project name
 project(p2psp-console C CXX)
 
 list(APPEND BOOST_REQUIRED_COMPONENTS
-  system 
-  filesystem 
-  chrono 
+  system
+  filesystem
+  chrono
   serialization
   timer
   thread
@@ -20,7 +27,7 @@ list(APPEND BOOST_REQUIRED_COMPONENTS
   program_options
 )
 
-find_package(Boost COMPONENTS 
+find_package(Boost COMPONENTS
   ${BOOST_REQUIRED_COMPONENTS}
 REQUIRED)
 
@@ -32,7 +39,7 @@ find_package(OpenSSL REQUIRED)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 include_directories(
-  ${Boost_INCLUDE_DIR} 
+  ${Boost_INCLUDE_DIR}
   ${OPENSSL_INCLUDE_DIR}
 )
 
@@ -56,7 +63,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
         message(FATAL_ERROR "${PROJECT_NAME} requires g++ 4.7 or greater")
     endif ()
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 else ()
     message(FATAL_ERROR "Your C++ compiler does not support C++11")
 endif ()
@@ -68,12 +75,12 @@ if(BUILD_PEER)
   add_executable(peer "src/peer.cc")
 
   # Libraries
-  target_link_libraries(peer 
+  target_link_libraries(peer
     ${P2PSP_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
     ${Boost_LIBRARIES}
   )
-  
+
   # Enable C++11 for CMake 3.1.0 or later
   set_property(TARGET peer PROPERTY CXX_STANDARD 11)
   set_property(TARGET peer PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -82,14 +89,14 @@ endif()
 if(BUILD_SPLITTER)
   # Executable
   add_executable(splitter "src/splitter.cc")
-  
+
   # Libraries
-  target_link_libraries(splitter 
+  target_link_libraries(splitter
     ${P2PSP_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
     ${Boost_LIBRARIES}
   )
-  
+
   # Enable C++11 for CMake 3.1.0 or later
   set_property(TARGET splitter PROPERTY CXX_STANDARD 11)
   set_property(TARGET splitter PROPERTY CXX_STANDARD_REQUIRED ON)
