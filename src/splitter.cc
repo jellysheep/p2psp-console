@@ -14,6 +14,7 @@
 #include "../lib/p2psp/src/core/splitter_dbs.h"
 #include "../lib/p2psp/src/core/splitter_acs.h"
 #include "../lib/p2psp/src/core/splitter_lrs.h"
+#include "../lib/p2psp/src/core/splitter_nts.h"
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <signal.h>
@@ -81,7 +82,7 @@ int main(int argc, const char *argv[]) {
          "By default, DBS (unicast transmissions) will be used.\n"
          "Parameters");
 
-  {
+  //~ {
 
     int buffer_size = p2psp::SplitterIMS::GetDefaultBufferSize();
     std::string channel = p2psp::SplitterIMS::GetDefaultChannel();
@@ -159,7 +160,7 @@ int main(int argc, const char *argv[]) {
       (
        "TTL", boost::program_options::value<int>()->default_value(TTL),
        "Time To Live of the multicast messages. Default = '{}'.");
-  }
+  //~ }
 
   boost::program_options::variables_map vm;
   try {
@@ -181,12 +182,12 @@ int main(int argc, const char *argv[]) {
   is_IMS_only = false;
   if (vm.count("strpe")) {
     //splitter_ptr.reset(new p2psp::SplitterSTRPE());
+  } else if (vm.count("NTS")) {
+    splitter_ptr.reset(new p2psp::SplitterNTS());
   } else if (vm.count("LRS")) {
     splitter_ptr.reset(new p2psp::SplitterLRS());
   } else if (vm.count("ACS")) {
     splitter_ptr.reset(new p2psp::SplitterACS());
-    // } else if (vm.count("NTS")) {
-    //  splitter_ptr.reset(new p2psp::SplitterNTS());
   } else if (vm.count("IMS")) {
     is_IMS_only = true;
     splitter_ptr.reset(new p2psp::SplitterIMS());

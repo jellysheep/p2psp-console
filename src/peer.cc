@@ -14,8 +14,11 @@
 #include "../lib/p2psp/src/core/common.h"
 #include "../lib/p2psp/src/core/monitor_dbs.h"
 #include "../lib/p2psp/src/core/monitor_lrs.h"
+#include "../lib/p2psp/src/core/monitor_nts.h"
 #include "../lib/p2psp/src/core/peer_dbs.h"
 #include "../lib/p2psp/src/core/peer_ims.h"
+#include "../lib/p2psp/src/core/peer_nts.h"
+#include "../lib/p2psp/src/core/peer_symsp.h"
 //#include "peer_strpeds.h"
 //#include "peer_strpeds_malicious.h"
 //#include "trusted_peer.h"
@@ -75,8 +78,7 @@ namespace p2psp {
       int max_chunk_debt = p2psp::PeerDBS::GetDefaultMaxChunkDebt();
       uint16_t team_port = p2psp::PeerDBS::GetDefaultTeamPort();
 
-      //p2psp::PeerNTS nts;
-      //int team_port_step = nts.GetTeamPortStep();
+      int source_port_step = 0;
 
       // TODO: strpe option should expect a list of arguments, not bool
       desc.add_options()
@@ -90,9 +92,9 @@ namespace p2psp {
         ("player_port",
          boost::program_options::value<uint16_t>()->default_value(player_port),
          "Port to communicate with the player.")
-        //("team_port_step",
-        // boost::program_options::value<int>(&team_port_step)->default_value(team_port_step),
-        // "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
+        ("source_port_step",
+         boost::program_options::value<int>()->default_value(source_port_step),
+         "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
         ("splitter_addr",
          boost::program_options::value<std::string>()->default_value(splitter_addr),
          "IP address or hostname of the splitter.")
@@ -156,9 +158,13 @@ namespace p2psp {
     if (vm.count("monitor")) {
       // Monitor enabled
       LOG("Monitor enabled.");
-      peer.reset(new p2psp::MonitorLRS());
+      peer.reset(new p2psp::MonitorNTS());
     } else {
-      peer.reset(new p2psp::PeerDBS());
+      p2psp::PeerSYMSP* peer_ptr = new p2psp::PeerSYMSP();
+      if (vm.count("source_port_step")) {
+        peer_ptr->SetPortStep(vm["source_port_step"].as<int>());
+      }
+      peer.reset(peer_ptr);
     }
     peer->Init();
 
@@ -173,10 +179,6 @@ namespace p2psp {
     if (vm.count("player_port")) {
       peer->SetPlayerPort(vm["player_port"].as<uint16_t>());
     }
-
-    /*if (vm.count("team_port_step")) {
-      Symsp_Peer peer->SetTeamPortStep(vm["team_port_step"].as<int>());
-      }*/
 
     if (vm.count("splitter_addr")) {
       //std::string x =

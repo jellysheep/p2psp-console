@@ -19,7 +19,7 @@ else
     export splitter_port
     export peer_port
 
-    ./src/tools/testrun2.sh
+    ./src/testrun2.sh
     # Record a testrun:
-    # asciinema rec -c ./testrun2.sh asciinema.txt
+    # asciinema rec -c ./src/testrun2.sh asciinema.txt
 fi
