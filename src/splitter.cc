@@ -159,7 +159,7 @@ int main(int argc, const char *argv[]) {
        "Loggin STrPe & STrPe-DS specific data to file.")
       (
        "TTL", boost::program_options::value<int>()->default_value(TTL),
-       "Time To Live of the multicast messages. Default = '{}'.");
+       "Time To Live of the multicast messages.");
   //~ }
 
   boost::program_options::variables_map vm;
