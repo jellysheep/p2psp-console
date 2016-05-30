@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import socket
 import select
+import threading
 SPLITTER_LIST=[]
 Resend_list=[]
 TO_FIRST_SPLITTER=[]
@@ -12,7 +13,7 @@ class Tracker():
         self.sock.listen(5)
 		#Tracker socket listens on port 8000
 		
-    def listen(self):
+    """def listen(self):
         while 1:
         #Efficiently wait for sockets to be read or written to.
             if len(Resend_list) != 0:
@@ -38,8 +39,8 @@ class Tracker():
                     if sock == SPLITTER_LIST[0]:
                         TO_OTHER_SPLITTERS.append(sock.recv(1024))
                     else:
-                        """A header is attached to the data being sent to the underlying splitter
-                        so that when we receive the response from the splitter we know who to send it to"""
+                        A header is attached to the data being sent to the underlying splitter
+                        so that when we receive the response from the splitter we know who to send it to
                         TO_FIRST_SPLITTER.append(sock.recv(1024)+"!@#$!@#$"+str(sock.getpeername()))
                         #Not sure how to include the header. Suggestions welcome
                         
@@ -61,9 +62,22 @@ class Tracker():
                     for items in TO_OTHER_SPLITTERS:
                         s=items.split("!@#$!@#$")
                         if s[1] == str(sock.getpeername()):
-                            sock.send(s[0])
+                            sock.send(s[0])"""
                         
                         
+                        
+    def listen(self):
+    while True:
+        (sockfd,addr)=self.sock.accept()
+        try:
+            threading.Thread(target=sync,args=(self)).start()
+        except:
+            print("Thread could not be started")
+
+    
+    
+
+
                         
 if __name__ == "__main__":
     track=Tracker()
