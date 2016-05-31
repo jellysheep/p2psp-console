@@ -110,13 +110,6 @@ class Tracker():
                 TO_OTHER_SPLITTERS.append(SPLITTER_LIST[0].recv(1024))
             
         else:
-            TO_FIRST_SPLITTER.append(SPLITTER_LIST[splitter_id].recv(1024)+"!@#$!@#$"+str(SPLITTER_LIST[splitter_id].getpeername()))
-            for items in TO_OTHER_SPLITTERS:
-                s=items.split("!@#$!@#$")
-                if s[1] == str(SPLITTER_LIST[splitter_id].getpeername()):
-                    sock.send(s[0])
-                    return
-        
             
         
 
