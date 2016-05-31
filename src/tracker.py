@@ -82,7 +82,7 @@ class Tracker():
                 try:
                     sockfd.send("First Splitter")
                     #Since this is a multi-threaded environment, we can identify the first splitter through the splitter_id  variable passed on to the sync function
-                    #making this message redundant. This message can be removed in the future.
+                    #However, the splitter should know that it is the first splitter
                 except:
                     Resend_list.append(sockfd)
                     #If the message could not be sent, send again in the next iteration
