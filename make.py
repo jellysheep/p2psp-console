@@ -40,7 +40,7 @@ if not os.path.exists(build_dir):
 sys_name = platform.system()
 
 if sys_name == 'Linux' or sys_name == 'Darwin':
-    print('\nMaking for Linux...\n')
+    print('\nMaking for Unix (Linux/Darwing/...)\n')
     command = 'cd build && ' + cmake + ' .. && echo'
     if os.system(command) == 0:
         command = 'cd build && make'
