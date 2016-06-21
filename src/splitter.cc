@@ -41,7 +41,7 @@ void HandlerCtrlC(int s) {
 
 void HandlerEndOfExecution() {
   // Wake up the "moderate_the_team" daemon, which is waiting in a recvfrom().
-  splitter_ptr->SayGoodbye();
+  //splitter_ptr->SayGoodbye();
 
   // Wake up the "handle_arrivals" daemon, which is waiting in an accept().
   boost::asio::io_service io_service_;
