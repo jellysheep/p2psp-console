@@ -57,6 +57,11 @@ namespace p2psp {
       }
     }
 
+    uint16_t GetDefaultPlayerPort() {
+      return kPlayerPort;
+    }
+
+
   };
 
   int run(int argc, const char* argv[]) throw(boost::system::system_error) {
