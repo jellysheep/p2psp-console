@@ -10,11 +10,11 @@
 
 #include <iostream>
 #include <memory>
-#include "../lib/p2psp/src/core/splitter_ims.h"
-#include "../lib/p2psp/src/core/splitter_dbs.h"
-#include "../lib/p2psp/src/core/splitter_acs.h"
-#include "../lib/p2psp/src/core/splitter_lrs.h"
-#include "../lib/p2psp/src/core/splitter_nts.h"
+#include "core/splitter_ims.h"
+#include "core/splitter_dbs.h"
+#include "core/splitter_acs.h"
+#include "core/splitter_lrs.h"
+#include "core/splitter_nts.h"
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <signal.h>
@@ -27,7 +27,7 @@
 
 // TODO: LOG fails if splitter is defined outside the main
 // p2psp::SplitterSTRPE splitter;
-std::shared_ptr<p2psp::SplitterIMS> splitter_ptr;
+std::shared_ptr<p2psp::SplitterDBS> splitter_ptr;
 
 // True if splitter_ptr is SplitterIMS and no subclass
 bool is_IMS_only;
@@ -60,14 +60,15 @@ void HandlerEndOfExecution() {
 }
 
 bool HasParameter(const boost::program_options::variables_map& vm,
-    const std::string& param_name, char min_magic_flags) {
+		  const std::string& param_name,
+		  char min_magic_flags) {
   if (!vm.count(param_name)) {
     return false;
   }
-  if (is_IMS_only || std::static_pointer_cast<p2psp::SplitterDBS>(
-      splitter_ptr)->GetMagicFlags() < min_magic_flags) {
-    ERROR("The parameter --" << param_name
-        << " is not available for this splitter mode.");
+  if (is_IMS_only || std::static_pointer_cast<p2psp::SplitterDBS>(splitter_ptr)->GetMagicFlags() < min_magic_flags) {
+    ERROR("The parameter --"
+	  << param_name
+	  << " is not available for this splitter mode.");
     return false;
   }
   return true;
@@ -75,7 +76,8 @@ bool HasParameter(const boost::program_options::variables_map& vm,
 
 int main(int argc, const char *argv[]) {
 
-  // Argument Parser
+  // {{{ Argument parsing
+
   boost::program_options::options_description
     desc("This is the splitter node of a P2PSP team.\n"
          "The splitter is in charge of defining the Set or Rules (SoR) that will control the team. \n"
@@ -179,19 +181,26 @@ int main(int argc, const char *argv[]) {
     return 1;
   }
 
+  // }}}
+
   is_IMS_only = false;
   if (vm.count("strpe")) {
     //splitter_ptr.reset(new p2psp::SplitterSTRPE());
   } else if (vm.count("NTS")) {
+    LOG("NTS enabled");
     splitter_ptr.reset(new p2psp::SplitterNTS());
   } else if (vm.count("LRS")) {
+    LOG("LRS enabled");
     splitter_ptr.reset(new p2psp::SplitterLRS());
   } else if (vm.count("ACS")) {
+    LOG("ACS enabled");
     splitter_ptr.reset(new p2psp::SplitterACS());
   } else if (vm.count("IMS")) {
+    LOG("IMS enabled");
     is_IMS_only = true;
     splitter_ptr.reset(new p2psp::SplitterIMS());
   } else {
+    LOG("IMS enabled");
     splitter_ptr.reset(new p2psp::SplitterDBS());
   }
 

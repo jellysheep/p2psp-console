@@ -38,7 +38,10 @@ find_package(OpenSSL REQUIRED)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
+set(P2PSP_INCLUDE_DIR ../core/src/)
+
 include_directories(
+  ${P2PSP_INCLUDE_DIR}
   ${Boost_INCLUDE_DIR}
   ${OPENSSL_INCLUDE_DIR}
 )
@@ -46,7 +49,8 @@ include_directories(
 link_directories(${Boost_LIBRARY_DIR})
 
 #Find P2PSP Library
-FIND_LIBRARY(P2PSP_LIBRARY p2psp lib/p2psp/bin/ lib/p2psp/src/core/)
+#FIND_LIBRARY(P2PSP_LIBRARY p2psp lib/p2psp/bin/ lib/p2psp/src/core/)
+FIND_LIBRARY(P2PSP_LIBRARY p2psp ../core/bin/ ../core/src/core/)
 
 # Initialize CXXFLAGS
 set(CMAKE_CXX_FLAGS                "-Wall -std=c++11")

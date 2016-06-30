@@ -11,19 +11,19 @@
 #include <boost/format.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-#include "../lib/p2psp/src/core/common.h"
-#include "../lib/p2psp/src/core/monitor_dbs.h"
-#include "../lib/p2psp/src/core/monitor_lrs.h"
-#include "../lib/p2psp/src/core/monitor_nts.h"
-#include "../lib/p2psp/src/core/peer_dbs.h"
-#include "../lib/p2psp/src/core/peer_ims.h"
-#include "../lib/p2psp/src/core/peer_nts.h"
-#include "../lib/p2psp/src/core/peer_symsp.h"
+#include "core/common.h"
+#include "core/monitor_dbs.h"
+#include "core/monitor_lrs.h"
+#include "core/monitor_nts.h"
+#include "core/peer_dbs.h"
+#include "core/peer_ims.h"
+#include "core/peer_nts.h"
+#include "core/peer_symsp.h"
 //#include "peer_strpeds.h"
 //#include "peer_strpeds_malicious.h"
 //#include "trusted_peer.h"
 //#include "malicious_peer.h"
-#include "../lib/p2psp/src/util/trace.h"
+#include "util/trace.h"
 
 namespace p2psp {
 
@@ -60,24 +60,18 @@ namespace p2psp {
   };
 
   int run(int argc, const char* argv[]) throw(boost::system::system_error) {
-    // TODO: Format default options
-    boost::format format("Defaut = %5i");
 
-    // Argument Parser
-    boost::program_options::options_description
-      desc("This is the peer node of a P2PSP team.\n"
-           "Parameters");
+    // {{{ Argument Parsing
+
+    boost::program_options::options_description desc("This is the peer node of a P2PSP team.\n" "Parameters");
 
     {
 
       uint16_t player_port = p2psp::PeerIMS::GetDefaultPlayerPort();
-
       std::string splitter_addr = p2psp::PeerIMS::GetDefaultSplitterAddr().to_string();
       uint16_t splitter_port = p2psp::PeerIMS::GetDefaultSplitterPort();
-
       int max_chunk_debt = p2psp::PeerDBS::GetDefaultMaxChunkDebt();
       uint16_t team_port = p2psp::PeerDBS::GetDefaultTeamPort();
-
       int source_port_step = 0;
 
       // TODO: strpe option should expect a list of arguments, not bool
@@ -153,114 +147,126 @@ namespace p2psp {
       return 1;
     }
 
-    std::unique_ptr<p2psp::PeerDBS> peer;
+    // }}}
 
-    if (vm.count("monitor")) {
-      // Monitor enabled
-      LOG("Monitor enabled.");
-      peer.reset(new p2psp::MonitorNTS());
-    } else {
-      p2psp::PeerSYMSP* peer_ptr = new p2psp::PeerSYMSP();
-      if (vm.count("source_port_step")) {
-        peer_ptr->SetPortStep(vm["source_port_step"].as<int>());
-      }
-      peer.reset(peer_ptr);
-    }
-    peer->Init();
-
-    if (vm.count("show_buffer")) {
-      peer->SetShowBuffer(true);
-    }
-
-    if (vm.count("max_chunk_debt")) {
-      peer->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
-    }
+    std::unique_ptr<p2psp::PeerIMS> peer;
+    peer.reset(new p2psp::PeerIMS());
 
     if (vm.count("player_port")) {
       peer->SetPlayerPort(vm["player_port"].as<uint16_t>());
+      LOG("---> player_port = " << peer->GetPlayerPort());
+    }
+
+    peer->WaitForThePlayer();
+    LOG("Player connected");
+
+    peer->ConnectToTheSplitter();
+    LOG("Connected to the splitter");
+
+    peer->ReceiveMagicFlags();
+    LOG("-->Received magic flags = " << std::bitset<8>(peer->GetMagicFlags()));
+    switch (peer->GetMagicFlags()) {
+      case Common::kDBS:
+	if (vm.count("monitor")) {
+	  peer.reset(new p2psp::MonitorDBS());
+	  LOG("Monitor DBS");
+	} else {
+	  peer.reset(new p2psp::PeerDBS());
+	  LOG("Peer DBS");
+	}
+      case Common::kLRS:
+	if (vm.count("monitor")) {
+	  peer.reset(new p2psp::MonitorLRS());
+	  LOG("Monitor LRS");
+	} else {
+	  peer.reset(new p2psp::PeerDBS());
+	  LOG("Peer DBS");
+	}	  
+      case Common::kACS:
+	peer.reset(new p2psp::PeerDBS());
+	LOG("Peer DBS");
+      case Common::kNTS:
+	if (vm.count("monitor")) {
+	  peer.reset(new p2psp::MonitorNTS());
+	  LOG("Monitor NTS");
+	} else {
+	  p2psp::PeerSYMSP* peer_ptr = new p2psp::PeerSYMSP();
+	  if (vm.count("source_port_step")) {
+	    peer_ptr->SetPortStep(vm["source_port_step"].as<int>());
+	  }
+	  peer.reset(peer_ptr);
+	  LOG("Peer NTS");
+	}
+      }
+
+    //LOG("Peer type = " << std::string(typeid(*peer)));
+
+    peer->Init();
+
+    if (vm.count("show_buffer")) {
+      LOG("show_buffer flag activated");
+      peer->SetShowBuffer(true);
+    }
+
+    if (typeid(*peer) != typeid(p2psp::PeerIMS)) {
+      if (vm.count("max_chunk_debt")) {
+	p2psp::PeerDBS* peer_ptr = new p2psp::PeerDBS();
+	peer_ptr->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
+	peer.reset(peer_ptr);
+	//LOG("max_chunk_debt" << peer->GetMaxChunkDebt());
+      }
     }
 
     if (vm.count("splitter_addr")) {
       //std::string x =
-        peer->SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
+      peer->SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
       //peer->SetSplitterAddr(vm["splitter_addr"].as<ip::address>());
+      LOG("splitter_addr = " << peer->GetSplitterAddr());
     }
 
     if (vm.count("splitter_port")) {
       peer->SetSplitterPort(vm["splitter_port"].as<uint16_t>());
+      LOG("splitter_port = " << peer->GetSplitterPort());
     }
 
     if (vm.count("team_port")) {
       peer->SetTeamPort(vm["team_port"].as<uint16_t>());
+      LOG("team_port = " << peer->GetTeamPort());
     }
 
     if (vm.count("use_localhost")) {
-      peer->SetUseLocalhost(true);
+      //p2psp::PeerDBS* peer_ptr = new p2psp::PeerDBS();
+      //peer_ptr->SetUseLocalhost(true);
+      //LOG("use_localhost = " << peer_ptr->GetUseLocalHost());
+      peer->SetUseLocalHost(true);
+      LOG("use_localhost = " << peer->GetUseLocalHost());
     }
 
-    // TODO: To the future
-    /*
-      if (vm.count("persistent")) {
-      peer->SetPersistentAttack(true);
-      }
-
-      if (vm.count("on_off_ratio")) {
-      peer->SetOnOffAttack(true, vm["on_off_ratio"].as<int>());
-      }
-
-      if (vm.count("selective")) {
-      peer->SetSelectiveAttack(true, vm["selective"].as<std::string>());
-      }
-
-      if (vm.count("bad_mouth")) {
-      peer->SetBadMouthAttack(true, vm["bad_mouth"].as<std::string>());
-      }
-
-      if (vm.count("checkall")) {
-      peer->SetCheckAll(true);
-      }
-
-      if (vm.count("strpe_log")) {
-      // TODO: Handle logging
-      }*/
-
-    peer->WaitForThePlayer();
-    peer->ConnectToTheSplitter();
-    peer->ReceiveTheMcastEndpoint();
-    peer->ReceiveTheHeaderSize();
-    peer->ReceiveTheChunkSize();
-    peer->ReceiveTheHeader();
-    peer->ReceiveTheBufferSize();
+    peer->ReceiveTheMcastChannel();
     LOG("Using IP Multicast address = " << peer->GetMcastAddr().to_string());
+    peer->ReceiveTheHeaderSize();
+    LOG("Header size = " << peer->GetHeaderSize());
+    peer->ReceiveTheChunkSize();
+    LOG("Chunk size = " << peer->GetChunkSize());
+    peer->ReceiveTheHeader();
+    LOG("Header received");
+    peer->ReceiveTheBufferSize();
+    LOG("Buffer size = " << peer->GetBufferSize());
 
-    // A multicast address is always received, even for DBS peers.
-    if (peer->GetMcastAddr().to_string() == "0.0.0.0") {
-      peer->ReceiveMyEndpoint();
-      peer->ReceiveMagicFlags();
-      // LOG("Magic flags =" << std::bitset<8>(peer->magic_flags));
-      peer->ReceiveTheNumberOfPeers();
-      LOG("Number of peers in the team (excluding me) ="
-          << std::to_string(peer->GetNumberOfPeers()));
-      LOG("Am I a monitor peer? =" << (peer->AmIAMonitor() ? "True" : "False"));
+    if (typeid(*peer) != typeid(p2psp::PeerIMS)) {
+      // IP unicast mode
+      p2psp::PeerDBS* peer_ptr = new p2psp::PeerDBS();
+      peer_ptr->ReceiveTheNumberOfPeers();
+      LOG("Number of peers in the team (excluding me) =" << std::to_string(peer_ptr->GetNumberOfPeers()));
       peer->ListenToTheTeam();
-      peer->ReceiveTheListOfPeers();
+      LOG("Listing to the team");
+      peer_ptr->ReceiveTheListOfPeers();
       LOG("List of peers received");
 
       // After receiving the list of peers, the peer can check whether is a
       // monitor peer or not (only the first arriving peers are monitors)
 
-      if (peer->AmIAMonitor()) {
-        LOG("Monitor DBS enabled");
-
-        // The peer is a monitor. Now it's time to know the sets of rules that
-        // control this team.
-      } else {
-        LOG("Peer DBS enabled");
-
-        // The peer is a normal peer-> Let's know the sets of rules that control
-        // this team.
-      }
-
+      LOG("Am I a monitor peer? = " << (peer_ptr->AmIAMonitor() ? "True" : "False"));
     } else {
       // IP multicast mode
       peer->ListenToTheTeam();
@@ -345,6 +351,9 @@ namespace p2psp {
         LOG(_SET_COLOR(_GREEN));
       }
 
+      // TODO: Format default options
+      boost::format format("Defaut = %5i");
+      
       // TODO: format
       LOG(kbps_expected_recv);
       LOG(kbps_recvfrom);
@@ -365,7 +374,10 @@ namespace p2psp {
       counter = 0;
       for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = peer->GetPeerList()->begin(); p != peer->GetPeerList()->end(); ++p) {
         if (counter < 5) {
-          LOG("(" << p->address().to_string() << "," << std::to_string(p->port())
+          LOG("("
+	      << p->address().to_string()
+	      << ","
+	      << std::to_string(p->port())
               << ")");
           counter++;
         } else {
