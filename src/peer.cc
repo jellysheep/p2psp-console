@@ -1,9 +1,9 @@
 //
-//  peer.cc
-//  P2PSP
+//  peer.cc -- Console version of a P2PSP peer
 //
 //  This code is distributed under the GNU General Public License (see
 //  THE_GENERAL_GNU_PUBLIC_LICENSE.txt for extending this information).
+//
 //  Copyright (C) 2016, the P2PSP team.
 //  http://www.p2psp.org
 //
@@ -27,9 +27,18 @@
 
 namespace p2psp {
 
+  /*
+    This peer collects the chunks and send them via TCP to a player.
+  */
   class Player: public PeerIMS {
+    // {{{
+
+    static const uint16_t kPlayerPort = 9999;  
+    uint16_t player_port_ = kPlayerPort;
 
     void WaitForThePlayer() {
+      // {{{
+
       std::string port = std::to_string(player_port_);
       ip::tcp::endpoint endpoint(ip::tcp::v4(), player_port_);
 
@@ -46,22 +55,32 @@ namespace p2psp {
       TRACE("The player is ("
             << player_socket_.remote_endpoint().address().to_string() << ","
             << std::to_string(player_socket_.remote_endpoint().port()) << ")");
+
+      // }}}
     }
 
     void PlayChunk(int chunk) {
+      // {{{
+
       try {
         write(player_socket_, buffer(chunks_[chunk % buffer_size_].data));
       } catch (std::exception e) {
         TRACE("Player disconnected!");
         player_alive_ = false;
       }
+
+      // }}}
     }
 
     uint16_t GetDefaultPlayerPort() {
+      // {{{
+
       return kPlayerPort;
+
+      // }}}
     }
 
-
+    // }}}
   };
 
   int run(int argc, const char* argv[]) throw(boost::system::system_error) {
@@ -159,57 +178,75 @@ namespace p2psp {
 
     if (vm.count("player_port")) {
       peer->SetPlayerPort(vm["player_port"].as<uint16_t>());
-      LOG("---> player_port = " << peer->GetPlayerPort());
+      TRACE("---> player_port = " << peer->GetPlayerPort());
     }
 
     peer->WaitForThePlayer();
-    LOG("Player connected");
+    TRACE("Player connected");
 
     peer->ConnectToTheSplitter();
-    LOG("Connected to the splitter");
+    TRACE("Connected to the splitter");
+
+    peer->ReceiveTheMcastChannel();
+    TRACE("Using IP multicast address = " << peer->GetMcastAddr().to_string());
+
+    /* Depending on the IP multicast address received, the peer will
+       adapt itself to Peer_IMS or Peer_DBS (or derived). For the
+       first case (IMS), the multicast address must be !=
+       0.0.0.0. Otherwise, we will use the magic flags to provide to
+       the peer the right set of rules. Notice that a multicast
+       address is always received, even for DBS and descendant
+       classes.*/
 
     peer->ReceiveMagicFlags();
-    LOG("-->Received magic flags = " << std::bitset<8>(peer->GetMagicFlags()));
+    TRACE("-->Received magic flags = " << std::bitset<8>(peer->GetMagicFlags()));
+
+    if (peer->GetMcastAddr().to_string() != "0.0.0.0") {
+      /* This will be a pure IMS peer ... */
+    } else {
+      /* DBS of descendant peer ... */
+    }
+    
     switch (peer->GetMagicFlags()) {
       case Common::kDBS:
 	if (vm.count("monitor")) {
 	  peer.reset(new p2psp::MonitorDBS());
-	  LOG("Monitor DBS");
+	  TRACE("Monitor DBS");
 	} else {
 	  peer.reset(new p2psp::PeerDBS());
-	  LOG("Peer DBS");
+	  TRACE("Peer DBS");
 	}
       case Common::kLRS:
 	if (vm.count("monitor")) {
 	  peer.reset(new p2psp::MonitorLRS());
-	  LOG("Monitor LRS");
+	  TRACE("Monitor LRS");
 	} else {
 	  peer.reset(new p2psp::PeerDBS());
-	  LOG("Peer DBS");
+	  TRACE("Peer DBS");
 	}	  
       case Common::kACS:
 	peer.reset(new p2psp::PeerDBS());
-	LOG("Peer DBS");
+	TRACE("Peer DBS");
       case Common::kNTS:
 	if (vm.count("monitor")) {
 	  peer.reset(new p2psp::MonitorNTS());
-	  LOG("Monitor NTS");
+	  TRACE("Monitor NTS");
 	} else {
 	  p2psp::PeerSYMSP* peer_ptr = new p2psp::PeerSYMSP();
 	  if (vm.count("source_port_step")) {
 	    peer_ptr->SetPortStep(vm["source_port_step"].as<int>());
 	  }
 	  peer.reset(peer_ptr);
-	  LOG("Peer NTS");
+	  TRACE("Peer NTS");
 	}
       }
 
-    //LOG("Peer type = " << std::string(typeid(*peer)));
+    //TRACE("Peer type = " << std::string(typeid(*peer)));
 
     peer->Init();
 
     if (vm.count("show_buffer")) {
-      LOG("show_buffer flag activated");
+      TRACE("show_buffer flag activated");
       peer->SetShowBuffer(true);
     }
 
@@ -218,7 +255,7 @@ namespace p2psp {
 	p2psp::PeerDBS* peer_ptr = new p2psp::PeerDBS();
 	peer_ptr->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
 	peer.reset(peer_ptr);
-	//LOG("max_chunk_debt" << peer->GetMaxChunkDebt());
+	//TRACE("max_chunk_debt" << peer->GetMaxChunkDebt());
       }
     }
 
@@ -226,52 +263,50 @@ namespace p2psp {
       //std::string x =
       peer->SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
       //peer->SetSplitterAddr(vm["splitter_addr"].as<ip::address>());
-      LOG("splitter_addr = " << peer->GetSplitterAddr());
+      TRACE("splitter_addr = " << peer->GetSplitterAddr());
     }
 
     if (vm.count("splitter_port")) {
       peer->SetSplitterPort(vm["splitter_port"].as<uint16_t>());
-      LOG("splitter_port = " << peer->GetSplitterPort());
+      TRACE("splitter_port = " << peer->GetSplitterPort());
     }
 
     if (vm.count("team_port")) {
       peer->SetTeamPort(vm["team_port"].as<uint16_t>());
-      LOG("team_port = " << peer->GetTeamPort());
+      TRACE("team_port = " << peer->GetTeamPort());
     }
 
     if (vm.count("use_localhost")) {
       //p2psp::PeerDBS* peer_ptr = new p2psp::PeerDBS();
       //peer_ptr->SetUseLocalhost(true);
-      //LOG("use_localhost = " << peer_ptr->GetUseLocalHost());
+      //TRACE("use_localhost = " << peer_ptr->GetUseLocalHost());
       peer->SetUseLocalHost(true);
-      LOG("use_localhost = " << peer->GetUseLocalHost());
+      TRACE("use_localhost = " << peer->GetUseLocalHost());
     }
 
-    peer->ReceiveTheMcastChannel();
-    LOG("Using IP Multicast address = " << peer->GetMcastAddr().to_string());
     peer->ReceiveTheHeaderSize();
-    LOG("Header size = " << peer->GetHeaderSize());
+    TRACE("Header size = " << peer->GetHeaderSize());
     peer->ReceiveTheChunkSize();
-    LOG("Chunk size = " << peer->GetChunkSize());
+    TRACE("Chunk size = " << peer->GetChunkSize());
     peer->ReceiveTheHeader();
-    LOG("Header received");
+    TRACE("Header received");
     peer->ReceiveTheBufferSize();
-    LOG("Buffer size = " << peer->GetBufferSize());
+    TRACE("Buffer size = " << peer->GetBufferSize());
 
     if (typeid(*peer) != typeid(p2psp::PeerIMS)) {
       // IP unicast mode
       p2psp::PeerDBS* peer_ptr = new p2psp::PeerDBS();
       peer_ptr->ReceiveTheNumberOfPeers();
-      LOG("Number of peers in the team (excluding me) =" << std::to_string(peer_ptr->GetNumberOfPeers()));
+      TRACE("Number of peers in the team (excluding me) =" << std::to_string(peer_ptr->GetNumberOfPeers()));
       peer->ListenToTheTeam();
-      LOG("Listing to the team");
+      TRACE("Listing to the team");
       peer_ptr->ReceiveTheListOfPeers();
-      LOG("List of peers received");
+      TRACE("List of peers received");
 
       // After receiving the list of peers, the peer can check whether is a
       // monitor peer or not (only the first arriving peers are monitors)
 
-      LOG("Am I a monitor peer? = " << (peer_ptr->AmIAMonitor() ? "True" : "False"));
+      TRACE("Am I a monitor peer? = " << (peer_ptr->AmIAMonitor() ? "True" : "False"));
     } else {
       // IP multicast mode
       peer->ListenToTheTeam();
