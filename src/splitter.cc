@@ -12,9 +12,9 @@
 #include <memory>
 #include "core/splitter_ims.h"
 #include "core/splitter_dbs.h"
-#include "core/splitter_acs.h"
-#include "core/splitter_lrs.h"
-#include "core/splitter_nts.h"
+//#include "core/splitter_acs.h"
+//#include "core/splitter_lrs.h"
+//#include "core/splitter_nts.h"
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <signal.h>
@@ -27,7 +27,7 @@
 
 // TODO: LOG fails if splitter is defined outside the main
 // p2psp::SplitterSTRPE splitter;
-std::shared_ptr<p2psp::SplitterDBS> splitter_ptr;
+std::shared_ptr<p2psp::SplitterIMS> splitter_ptr;
 
 // True if splitter_ptr is SplitterIMS and no subclass
 bool is_IMS_only;
@@ -188,13 +188,13 @@ int main(int argc, const char *argv[]) {
     //splitter_ptr.reset(new p2psp::SplitterSTRPE());
   } else if (vm.count("NTS")) {
     LOG("NTS enabled");
-    splitter_ptr.reset(new p2psp::SplitterNTS());
+    //splitter_ptr.reset(new p2psp::SplitterNTS());
   } else if (vm.count("LRS")) {
     LOG("LRS enabled");
-    splitter_ptr.reset(new p2psp::SplitterLRS());
+    //splitter_ptr.reset(new p2psp::SplitterLRS());
   } else if (vm.count("ACS")) {
     LOG("ACS enabled");
-    splitter_ptr.reset(new p2psp::SplitterACS());
+    //splitter_ptr.reset(new p2psp::SplitterACS());
   } else if (vm.count("IMS")) {
     LOG("IMS enabled");
     is_IMS_only = true;
@@ -283,10 +283,10 @@ int main(int argc, const char *argv[]) {
   if (!is_IMS_only) { // GetPeerList is only in DBS and derivated classes
     splitter_dbs = std::static_pointer_cast<p2psp::SplitterDBS>(splitter_ptr);
   }
-  std::shared_ptr<p2psp::SplitterACS> splitter_acs;
+  /*std::shared_ptr<p2psp::SplitterACS> splitter_acs;
   if (!is_IMS_only && splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) {
     splitter_acs = std::static_pointer_cast<p2psp::SplitterACS>(splitter_ptr);
-  }
+    }*/
   while (splitter_ptr->isAlive()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
     chunks_sendto = splitter_ptr->GetSendToCounter() - last_sendto_counter;
@@ -314,7 +314,7 @@ int main(int argc, const char *argv[]) {
           LOG(splitter_dbs->GetLoss(*it) << "/" << chunks_sendto << " "
               << splitter_dbs->GetMaxNumberOfChunkLoss());
 
-          if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
+          /*if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
           // _SET_COLOR(_YELLOW);
             LOG(splitter_acs->GetPeriod(*it));
             // _SET_COLOR(_PURPLE)
@@ -322,7 +322,7 @@ int main(int argc, const char *argv[]) {
                  splitter_acs->GetChunkSize() * 8) /
                 1000);
             splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
-          }
+	    }*/
         }
       }
     }

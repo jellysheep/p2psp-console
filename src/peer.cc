@@ -13,12 +13,13 @@
 #include <boost/program_options/variables_map.hpp>
 #include "core/common.h"
 #include "core/monitor_dbs.h"
-#include "core/monitor_lrs.h"
-#include "core/monitor_nts.h"
+//#include "core/monitor_lrs.h"
+//#include "core/monitor_nts.h"
+//#include "core/peer_core.h"
 #include "core/peer_dbs.h"
 #include "core/peer_ims.h"
-#include "core/peer_nts.h"
-#include "core/peer_symsp.h"
+//#include "core/peer_nts.h"
+//#include "core/peer_symsp.h"
 //#include "peer_strpeds.h"
 //#include "peer_strpeds_malicious.h"
 //#include "trusted_peer.h"
@@ -30,7 +31,7 @@ namespace p2psp {
   /*
     This peer collects the chunks and send them via TCP to a player.
   */
-  class Player: public PeerIMS {
+  class Player: public Peer_core {
     // {{{
 
     static const uint16_t kPlayerPort = 9999;  
@@ -59,11 +60,11 @@ namespace p2psp {
       // }}}
     }
 
-    void PlayChunk(int chunk) {
+    void PlayChunk(int chunk_number) {
       // {{{
 
       try {
-        write(player_socket_, buffer(chunks_[chunk % buffer_size_].data));
+        write(player_socket_, buffer(chunks_[chunk_number % buffer_size_].data));
       } catch (std::exception e) {
         TRACE("Player disconnected!");
         player_alive_ = false;
@@ -173,21 +174,25 @@ namespace p2psp {
 
     // }}}
 
-    std::unique_ptr<p2psp::PeerIMS> peer;
-    peer.reset(new p2psp::PeerIMS());
+    std::unique_ptr<p2psp::Peer_core> peer;
+    peer.reset(new p2psp::Peer_core());
 
-    peer->WaitForThePlayer();
-    TRACE("Player connected");
     if (vm.count("player_port")) {
       peer->SetPlayerPort(vm["player_port"].as<uint16_t>());
-      TRACE("---> player_port = " << peer->GetPlayerPort());
+      TRACE("player_port = " << peer->GetPlayerPort());
     }
-
+    peer->WaitForThePlayer();
+    TRACE("Player connected");
+    
     peer->ConnectToTheSplitter();
     TRACE("Connected to the splitter");
 
-    peer->ReceiveTheMcastChannel();
-    TRACE("Using IP multicast address = " << peer->GetMcastAddr().to_string());
+    peer->ReceiveMcastChannel();
+    TRACE("Using IP multicast channel = ("
+	  << peer->GetMcastAddr().to_string()
+	  << ","
+	  << peer->GetMcastPort()
+	  << ")");
 
     /* Depending on the IP multicast address received, the peer will
        adapt itself to Peer_IMS or Peer_DBS (or derived). For the
