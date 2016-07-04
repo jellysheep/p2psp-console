@@ -10,8 +10,8 @@
 
 #include <iostream>
 #include <memory>
-#include "core/splitter_ims.h"
-#include "core/splitter_dbs.h"
+#include "core/splitter_ims.cc"
+#include "core/splitter_dbs.cc"
 //#include "core/splitter_acs.h"
 //#include "core/splitter_lrs.h"
 //#include "core/splitter_nts.h"
@@ -20,10 +20,11 @@
 #include <signal.h>
 //#include "../lib/p2psp/src/util/trace.h"
 
-#define LOG(a)      {}
+/*#define LOG(a)      {}
 #define LOGC(c, a)  {}
 #define ERROR(a)    {}
 #define TRACE(a)    {}
+*/
 
 // TODO: LOG fails if splitter is defined outside the main
 // p2psp::SplitterSTRPE splitter;

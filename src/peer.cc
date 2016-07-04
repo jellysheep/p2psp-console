@@ -12,12 +12,12 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include "core/common.h"
-#include "core/monitor_dbs.h"
+//#include "core/monitor_dbs.h"
 //#include "core/monitor_lrs.h"
 //#include "core/monitor_nts.h"
 //#include "core/peer_core.h"
-#include "core/peer_dbs.h"
-#include "core/peer_ims.h"
+#include "core/peer_dbs.cc"
+#include "core/peer_ims.cc"
 //#include "core/peer_nts.h"
 //#include "core/peer_symsp.h"
 //#include "peer_strpeds.h"
@@ -34,12 +34,16 @@ namespace p2psp {
   class Player: public Peer_core {
     // {{{
 
+  protected:
+    
     static const uint16_t kPlayerPort = 9999;  
     uint16_t player_port_ = kPlayerPort;
 
+  public:
+    
     void WaitForThePlayer() {
       // {{{
-
+      
       std::string port = std::to_string(player_port_);
       ip::tcp::endpoint endpoint(ip::tcp::v4(), player_port_);
 
@@ -72,8 +76,24 @@ namespace p2psp {
 
       // }}}
     }
+    
+    uint16_t GetPlayerPort() {
+    // {{{
+      
+      return  player_port_;
+      
+      // }}}
+    }
+      
+    void SetPlayerPort(uint16_t player_port) {
+      // {{{
+      
+      player_port_ = player_port;
+      
+      // }}}
+    }
 
-    uint16_t GetDefaultPlayerPort() {
+    static uint16_t GetDefaultPlayerPort() {
       // {{{
 
       return kPlayerPort;
@@ -92,11 +112,11 @@ namespace p2psp {
 
     {
 
-      uint16_t player_port = p2psp::PeerIMS::GetDefaultPlayerPort();
-      std::string splitter_addr = p2psp::PeerIMS::GetDefaultSplitterAddr().to_string();
-      uint16_t splitter_port = p2psp::PeerIMS::GetDefaultSplitterPort();
-      int max_chunk_debt = p2psp::PeerDBS::GetDefaultMaxChunkDebt();
-      uint16_t team_port = p2psp::PeerDBS::GetDefaultTeamPort();
+      uint16_t player_port = Player::GetDefaultPlayerPort();
+      std::string splitter_addr = p2psp::Peer_core::GetDefaultSplitterAddr().to_string();
+      uint16_t splitter_port = p2psp::Peer_core::GetDefaultSplitterPort();
+      int max_chunk_debt = p2psp::Peer_DBS::GetDefaultMaxChunkDebt();
+      uint16_t team_port = p2psp::Peer_core::GetDefaultTeamPort();
       int source_port_step = 0;
 
       // TODO: strpe option should expect a list of arguments, not bool
@@ -174,8 +194,8 @@ namespace p2psp {
 
     // }}}
 
-    std::unique_ptr<p2psp::Peer_core> peer;
-    peer.reset(new p2psp::Peer_core());
+    std::unique_ptr<p2psp::Player> peer;
+    peer.reset(new p2psp::Player());
 
     if (vm.count("player_port")) {
       peer->SetPlayerPort(vm["player_port"].as<uint16_t>());
@@ -194,6 +214,18 @@ namespace p2psp {
 	  << peer->GetMcastPort()
 	  << ")");
 
+    peer->ReceiveHeaderSize();
+    TRACE("Header size = " << peer->GetHeaderSize());
+    
+    peer->ReceiveHeader();
+    TRACE("Header received");
+    
+    peer->ReceiveChunkSize();
+    TRACE("Chunk size = " << peer->GetChunkSize());
+    
+    peer->ReceiveBufferSize();
+    TRACE("Buffer size = " << peer->GetBufferSize());
+    
     /* Depending on the IP multicast address received, the peer will
        adapt itself to Peer_IMS or Peer_DBS (or derived). For the
        first case (IMS), the multicast address must be !=
@@ -202,37 +234,19 @@ namespace p2psp {
        address is always received, even for DBS and descendant
        classes.*/
 
-    if (peer->GetMcastAddr().to_string() != "0.0.0.0") {
+    if (peer->GetMcastAddr().to_string() == "0.0.0.0") {
       
-      /* This will be a pure IMS peer ... */
-      
-      peer->Init();
-
-      peer->ReceiveTheHeaderSize();
-      TRACE("Header size = " << peer->GetHeaderSize());
-
-      peer->ReceiveTheHeader();
-      TRACE("Header received");
-
-      peer->ReceiveTheChunkSize();
-      TRACE("Chunk size = " << peer->GetChunkSize());
-
-      peer->ReceiveTheBufferSize();
-      TRACE("Buffer size = " << peer->GetBufferSize());
-
-      peer->ListenToTheTeam();
-
-    } else {
-      
-      /* DBS of descendant peer ... */
-      
+      /* This is a DBS or descendant peer */
+      peer.reset(new p2psp::Peer_DBS());
       peer->ReceiveMagicFlags();
-      TRACE("-->Received magic flags = " << std::bitset<8>(peer->GetMagicFlags()));
+      TRACE("Received magic flags = " << std::bitset<8>(peer->GetMagicFlags()));
       
       switch (peer->GetMagicFlags()) {
+	// {{{
+
       case Common::kDBS:
 	if (vm.count("monitor")) {
-	  peer.reset(new p2psp::MonitorDBS());
+	  //peer.reset(new p2psp::MonitorDBS());
 	  TRACE("Monitor DBS");
 	} else {
 	  peer.reset(new p2psp::PeerDBS());
@@ -240,7 +254,7 @@ namespace p2psp {
 	}
       case Common::kLRS:
 	if (vm.count("monitor")) {
-	  peer.reset(new p2psp::MonitorLRS());
+	  //peer.reset(new p2psp::MonitorLRS());
 	  TRACE("Monitor LRS");
 	} else {
 	  peer.reset(new p2psp::PeerDBS());
@@ -263,51 +277,70 @@ namespace p2psp {
 	}
       }
 
+      // }}}
+
       if (vm.count("max_chunk_debt")) {
+	// {{{
+
 	p2psp::PeerDBS* peer_ptr = new p2psp::PeerDBS();
 	peer_ptr->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
 	peer.reset(peer_ptr);
 	//TRACE("max_chunk_debt" << peer->GetMaxChunkDebt());
+
+	// }}}
       }
 
       if (vm.count("splitter_addr")) {
+	// {{{
+
 	//std::string x =
 	peer->SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
 	//peer->SetSplitterAddr(vm["splitter_addr"].as<ip::address>());
 	TRACE("splitter_addr = " << peer->GetSplitterAddr());
+
+	// }}}
       }
 
       if (vm.count("splitter_port")) {
+	// {{{
+
 	peer->SetSplitterPort(vm["splitter_port"].as<uint16_t>());
 	TRACE("splitter_port = " << peer->GetSplitterPort());
+
+	// }}}
       }
 
       if (vm.count("team_port")) {
+	// {{{
+
 	peer->SetTeamPort(vm["team_port"].as<uint16_t>());
 	TRACE("team_port = " << peer->GetTeamPort());
+
+	// }}}
       }
 
       if (vm.count("use_localhost")) {
+	// {{{
+
 	//p2psp::PeerDBS* peer_ptr = new p2psp::PeerDBS();
 	//peer_ptr->SetUseLocalhost(true);
 	//TRACE("use_localhost = " << peer_ptr->GetUseLocalHost());
 	peer->SetUseLocalHost(true);
 	TRACE("use_localhost = " << peer->GetUseLocalHost());
+
+	// }}}
       }
+    }
+    
+    peer->Init();
+    
+    if (peer->GetMcastAddr().to_string() != "0.0.0.0") {
+      // {{{
 
-      peer->Init();
+      peer->ListenToTheTeam();
 
-      peer->ReceiveTheHeaderSize();
-      TRACE("Header size = " << peer->GetHeaderSize());
-
-      peer->ReceiveTheHeader();
-      TRACE("Header received");
-
-      peer->ReceiveTheChunkSize();
-      TRACE("Chunk size = " << peer->GetChunkSize());
-
-      peer->ReceiveTheBufferSize();
-      TRACE("Buffer size = " << peer->GetBufferSize());
+      // }}}
+    } else {
 
       peer_ptr->ReceiveTheNumberOfPeers();
       TRACE("Number of peers in the team (excluding me) =" << std::to_string(peer_ptr->GetNumberOfPeers()));
