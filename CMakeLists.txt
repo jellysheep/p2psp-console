@@ -50,7 +50,7 @@ link_directories(${Boost_LIBRARY_DIR})
 
 #Find P2PSP Library
 #FIND_LIBRARY(P2PSP_LIBRARY p2psp lib/p2psp/bin/ lib/p2psp/src/core/)
-FIND_LIBRARY(P2PSP_LIBRARY p2psp ../core/bin/ ../core/src/core/)
+FIND_LIBRARY(P2PSP_LIBRARY p2psp ../core/bin/ ../core/src/)
 
 # Initialize CXXFLAGS
 set(CMAKE_CXX_FLAGS                "-Wall -std=c++11")
