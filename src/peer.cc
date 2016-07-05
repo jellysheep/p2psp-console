@@ -38,9 +38,9 @@ namespace p2psp {
     
     static const uint16_t kPlayerPort = 9999;  
     uint16_t player_port_ = kPlayerPort;
+    io_service io_service_;
     ip::tcp::acceptor acceptor_; // Acceptor used to listen to incoming connections.
     ip::tcp::socket player_socket_;
-    io_service io_service_;
     int header_size_in_chunks_;
 
   public:
@@ -78,7 +78,7 @@ namespace p2psp {
       // }}}
     }
 
-    void ReceiveHeaderSize() {
+    void ReceiveHeaderSize(ip::tcp::socket splitter_socket_) {
       // {{{
       
       boost::array<char, 2> buffer;
@@ -99,7 +99,7 @@ namespace p2psp {
       // }}}
     }
 
-    void ReceiveHeader() {
+    void ReceiveHeader(ip::tcp::socket splitter_socket_, int chunk_size_) {
       // {{{
       
       int header_size_in_bytes = header_size_in_chunks_ * chunk_size_;
@@ -272,7 +272,7 @@ namespace p2psp {
     std::unique_ptr<p2psp::Peer_core> peer;
     peer.reset(new p2psp::Peer_core());
     
-    peer->ConnectToTheSplitter();
+    ip::tcp::socket splitter_socket = peer->ConnectToTheSplitter();
     TRACE("Connected to the splitter");
 
     peer->ReceiveMagicFlags();
@@ -404,16 +404,16 @@ namespace p2psp {
       
     }
     
-    peer->ReceiveHeaderSize();
+    peer->ReceiveHeaderSize(splitter_socket);
     TRACE("Header size = "
 	  << peer->GetHeaderSize());
-    
-    peer->ReceiveHeader();
-    TRACE("Header received");
     
     peer->ReceiveChunkSize();
     TRACE("Chunk size = "
 	  << peer->GetChunkSize());
+    
+    peer->ReceiveHeader(splitter_socket, peer->GetChunkSize());
+    TRACE("Header received");
     
     peer->ReceiveBufferSize();
     TRACE("Buffer size = "
