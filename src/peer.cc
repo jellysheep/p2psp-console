@@ -12,7 +12,7 @@
 //  team configuration from the splitter and finally, runs a peer.
 //
 
-#define _IMS_
+#define __IMS__
 
 // {{{ includes
 
@@ -38,7 +38,7 @@
 
 namespace p2psp {
 
-#if defined _IMS_  
+#if defined __IMS__  
   class Console: public Peer_IMS {
 #else
 #endif
@@ -69,35 +69,57 @@ namespace p2psp {
 	       player_socket_(io_service_) {
     }
 
-    void SetSourceAddr(std::string addr) {
+    void SetSourceAddr(ip::address addr) {
       // {{{
 
-      source.addr = ip::address::from_string(addr);
+      source.addr = addr;
 
       // }}}
     }
+
+    ip::address GetSourceAddr() {
+      return source.addr;
+    }
     
-    void SetSourceport(uint16_t port) {
+    static ip::address GetDefaultSourceAddr() {
       // {{{
 
-      source.addr = ip::address::from_string(addr);
+      return ip::address::from_string(/*kSourceAddrStr*/"127.0.0.1");
+
+      // }}}
+    }
+
+    void SetSourcePort(uint16_t port) {
+      // {{{
+
       source.port = port;
 
       // }}}
     }
+
+    uint16_t GetSourcePort() {
+      return source.port;
+    }
     
+    static uint16_t GetDefaultSourcePort() {
+      // {{{
+
+      return 8000;
+
+      // }}}
+    }
+
     void ConnectToTheSource() throw(boost::system::system_error) {
       // {{{
 
-      ip::tcp::endpoint source(source.addr, source.port);
-      source_socket_.connect(source);
+      ip::tcp::endpoint source_ep(this->source.addr, this->source.port);
+      source_socket_.connect(source_ep);
       TRACE("Connected to the source at ("
-	    << std::to_string(source.address())
+	    << this->source.addr.to_string()
 	    << ","
-	    << std::to_string(source.port())
+	    << std::to_string(this->source.port)
 	    << ") from "
-	    << std::to_string(source_socket_.local_endpoint().address())
-	    << );
+	    << source_socket_.local_endpoint().address().to_string());
 
       // }}}
     }
@@ -114,7 +136,7 @@ namespace p2psp {
       acceptor_.listen();
 
       TRACE("Waiting for the player at ("
-	    << std::to_string(endpoint.address())
+	    << endpoint.address().to_string()
 	    << ","
             << std::to_string(endpoint.port())
             << ")");
@@ -146,7 +168,7 @@ namespace p2psp {
     void SetHeaderSize(int header_size) {
       // {{{
 
-      this.header_size = header_size;
+      this->header_size = header_size;
 
       // }}}
     }
@@ -183,7 +205,7 @@ namespace p2psp {
       }
       
       TRACE("Received "
-	    << std::to_string(header_size_in_bytes)
+	    << std::to_string(header_size)
 	    << " bytes of header");
       
       // }}}
@@ -239,7 +261,9 @@ namespace p2psp {
 
     {
 
-      uint16_t player_port = Player::GetDefaultPlayerPort();
+      uint16_t player_port = Console::GetDefaultPlayerPort();
+      std::string source_addr = Console::GetDefaultSourceAddr().to_string();
+      uint16_t source_port = Console::GetDefaultSourcePort();
       std::string splitter_addr = p2psp::Peer_core::GetDefaultSplitterAddr().to_string();
       uint16_t splitter_port = p2psp::Peer_core::GetDefaultSplitterPort();
       int max_chunk_debt = p2psp::Peer_DBS::GetDefaultMaxChunkDebt();
@@ -261,6 +285,12 @@ namespace p2psp {
         ("source_port_step",
          boost::program_options::value<int>()->default_value(source_port_step),
          "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
+        ("source_addr",
+         boost::program_options::value<std::string>()->default_value(source_addr),
+         "IP address or hostname of the source.")
+        ("source_port",
+         boost::program_options::value<uint16_t>()->default_value(source_port),
+         "Listening port of the source.")
         ("splitter_addr",
          boost::program_options::value<std::string>()->default_value(splitter_addr),
          "IP address or hostname of the splitter.")
@@ -357,7 +387,7 @@ namespace p2psp {
     console.ConnectToTheSource();
     TRACE("Connected to the source");
 
-    console.relayHeader();
+    console.RelayHeader();
     TRACE("Header relayed");
 
     if (vm.count("splitter_addr")) {
@@ -379,17 +409,17 @@ namespace p2psp {
     console.ConnectToTheSplitter();
     TRACE("Connected to the splitter");
 
-#if defined _IMS_
+#if defined __IMS__
     TRACE("Using IMS");
     
-    console.RetrieveMcastChannel();
+    console.ReceiveMcastChannel();
     TRACE("Using IP multicast channel = ("
-	  << std::to_string(console.GetMcastAddr())
+	  << console.GetMcastAddr().to_string()
 	  << ","
-	  << peer->GetMcastPort()
+	  << console.GetMcastPort()
 	  << ")");
 
-#else if defined _DBS_
+#elif defined _DBS_
 
     TRACE("Using DBS");
 
@@ -437,15 +467,15 @@ namespace p2psp {
 
     console.ReceiveChunkSize();
     TRACE("Chunk size = "
-	  << peer->GetChunkSize());
+	  << console.GetChunkSize());
 
     console.ReceiveBufferSize();
     TRACE("Buffer size = "
-	  << peer->GetBufferSize());
+	  << console.GetBufferSize());
     
     console.Init();
 
-#if defined _IMS_
+#if defined __IMS__
     console.ListenToTheTeam();
 #else
     // {{{
@@ -482,6 +512,10 @@ namespace p2psp {
     LOG("---------+---------------------+----------------------+-----------------------------------...");
 
     int last_chunk_number = console.GetPlayedChunk();
+    float kbps_expected_recv = 0.0f;
+    float kbps_recvfrom = 0.0f;
+#ifndef __IMS__
+    int last_recvfrom_counter = console.GetRecvfromCounter();
     int last_sendto_counter = -1;
     if (console.GetSendtoCounter() < 0) {
       last_sendto_counter = 0;
@@ -489,21 +523,19 @@ namespace p2psp {
       //console.SetSendtoCounter(0);
       last_sendto_counter = 0;
     }
-
-    int last_recvfrom_counter = console.GetRecvfromCounter();
-    float kbps_expected_recv = 0.0f;
-    float kbps_recvfrom = 0.0f;
     float team_ratio = 0.0f;
-    float kbps_sendto = 0.0f;
     float kbps_expected_sent = 0.0f;
+    float kbps_sendto = 0.0f;
     // float nice = 0.0f;
     int counter = 0;
+#endif
 
     while (console.IsPlayerAlive()) {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
       kbps_expected_recv = ((console.GetPlayedChunk() - last_chunk_number) *
                             console.GetChunkSize() * 8) / 1000.0f;
       last_chunk_number = console.GetPlayedChunk();
+#ifndef __IMS__
       kbps_recvfrom = ((console.GetRecvfromCounter() - last_recvfrom_counter) *
                        console.GetChunkSize() * 8) / 1000.0f;
       last_recvfrom_counter = console.GetRecvfromCounter();
@@ -513,27 +545,12 @@ namespace p2psp {
                      console.GetChunkSize() * 8) / 1000.0f;
       last_sendto_counter = console.GetSendtoCounter();
 
-      // try:
-      if (p2psp::Common::kConsoleMode == false) {
-        /*from gi.repository import GObject
-          try:
-          from adapter import speed_adapter
-          except ImportError as msg:
-          pass
-          GObject.idle_add(speed_adapter.update_widget,str(kbps_recvfrom) << ' kbps'
-          ,str(kbps_sendto) << ' kbps'
-          ,str(len(console.peer_list)+1))
-          except Exception as msg:
-          pass*/
-      }
-
       if (kbps_recvfrom > 0 and kbps_expected_recv > 0) {
         // nice = 100.0 / (kbps_expected_recv / kbps_recvfrom) *
         // (console.GetPeerList()->size() + 1.0f);
       } else {
         // nice = 0.0f;
       }
-
       LOG("|");
 
       if (kbps_expected_recv < kbps_recvfrom) {
@@ -541,6 +558,7 @@ namespace p2psp {
       } else if (kbps_expected_recv > kbps_recvfrom) {
         LOG(_SET_COLOR(_GREEN));
       }
+#endif
 
       // TODO: Format default options
       boost::format format("Defaut = %5i");
@@ -550,7 +568,7 @@ namespace p2psp {
       LOG(kbps_recvfrom);
       //#print(("{:.1f}".format(nice)).rjust(6), end=' | ')
       //#sys.stdout.write(Color.none)
-
+#ifndef __IMS__
       if (kbps_expected_sent > kbps_sendto) {
         LOG(_SET_COLOR(_RED));
       } else if (kbps_expected_sent < kbps_sendto) {
@@ -576,16 +594,8 @@ namespace p2psp {
           LOG("");
         }
       }
+#endif
 
-      // try:
-      if (p2psp::Common::kConsoleMode == false) {
-        /*GObject.idle_add(speed_adapter.update_widget,str(0)+'
-          kbps',str(0)+' kbps',str(0))
-          except  Exception as msg:
-          pass
-          }
-        */
-      }
     }
 
     return 0;
