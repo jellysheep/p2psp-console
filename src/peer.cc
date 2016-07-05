@@ -111,7 +111,7 @@ namespace p2psp {
       if (ec) {
 	ERROR(ec.message());
 	splitter_socket_.close();
-	ConnectToTheSplitter();
+	//ConnectToTheSplitter();
       }
       
       try {
@@ -130,14 +130,16 @@ namespace p2psp {
       // }}}
     }
     
-    void PlayChunk(std::vector<char> chunk) {
+    bool PlayChunk(std::vector<char> chunk) {
       // {{{
 
       try {
-        write(player_socket_, /*buffer(chunks_[chunk_number % buffer_size_].data*/buffer(chunk)));
+        write(player_socket_, /*buffer(chunks_[chunk_number % buffer_size_].data*/buffer(chunk));
+        return true;
       } catch (std::exception e) {
         TRACE("Player disconnected!");
-        player_alive_ = false;
+        //player_alive_ = false;
+	return false;
       }
 
       // }}}
@@ -263,10 +265,10 @@ namespace p2psp {
     class Player player;
 
     if (vm.count("player_port")) {
-      player->SetPlayerPort(vm["player_port"].as<uint16_t>());
-      TRACE("player_port = " << peer->GetPlayerPort());
+      player.SetPlayerPort(vm["player_port"].as<uint16_t>());
+      TRACE("player_port = " << player.GetPlayerPort());
     }
-    player->WaitForThePlayer();
+    player.WaitForThePlayer();
     TRACE("Player connected");
 
     std::unique_ptr<p2psp::Peer_core> peer;
