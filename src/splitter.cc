@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <memory>
+#include "common.h"
 #include "core/splitter_ims.cc"
 #include "core/splitter_dbs.cc"
 //#include "core/splitter_acs.h"
