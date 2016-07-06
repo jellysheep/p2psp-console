@@ -1,44 +1,41 @@
 //
-//  splitter.cpp
-//  P2PSP
+//  splitter.cc -- Console version of a P2PSP peer
 //
 //  This code is distributed under the GNU General Public License (see
 //  THE_GENERAL_GNU_PUBLIC_LICENSE.txt for extending this information).
+//
 //  Copyright (C) 2016, the P2PSP team.
+//
 //  http://www.p2psp.org
 //
 
 #include <iostream>
 #include <memory>
 #include "common.h"
-#include "core/splitter_ims.cc"
-#include "core/splitter_dbs.cc"
+#include "core/common.h"
+#if defined __IMS__
+#include "core/splitter_ims.h"
+#elif defined __DBS__
+#include "core/splitter_dbs.h"
+#endif
 //#include "core/splitter_acs.h"
 //#include "core/splitter_lrs.h"
 //#include "core/splitter_nts.h"
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <signal.h>
-//#include "../lib/p2psp/src/util/trace.h"
 
-/*#define LOG(a)      {}
-#define LOGC(c, a)  {}
-#define ERROR(a)    {}
-#define TRACE(a)    {}
-*/
-
-// TODO: LOG fails if splitter is defined outside the main
-// p2psp::SplitterSTRPE splitter;
-std::shared_ptr<p2psp::SplitterIMS> splitter_ptr;
-
-// True if splitter_ptr is SplitterIMS and no subclass
-bool is_IMS_only;
+#if defined __IMS__
+Splitter_IMS splitter;
+#elif defined __DBS__
+Splitter_DBS splitter;
+#endif
 
 void HandlerCtrlC(int s) {
   LOG("Keyboard interrupt detected ... Exiting!");
 
   // Say to daemon threads that the work has been finished,
-  splitter_ptr->SetAlive(false);
+  splitter.SetAlive(false);
 }
 
 void HandlerEndOfExecution() {
@@ -51,7 +48,7 @@ void HandlerEndOfExecution() {
   boost::asio::ip::tcp::socket socket(io_service_);
   boost::asio::ip::tcp::endpoint endpoint(
       boost::asio::ip::address::from_string("127.0.0.1"),
-      splitter_ptr->GetTeamPort());
+      splitter.GetTeamPort());
 
   socket.connect(endpoint, ec);
 
@@ -67,12 +64,6 @@ bool HasParameter(const boost::program_options::variables_map& vm,
   if (!vm.count(param_name)) {
     return false;
   }
-  if (is_IMS_only || std::static_pointer_cast<p2psp::SplitterDBS>(splitter_ptr)->GetMagicFlags() < min_magic_flags) {
-    ERROR("The parameter --"
-	  << param_name
-	  << " is not available for this splitter mode.");
-    return false;
-  }
   return true;
 }
 
@@ -80,26 +71,31 @@ int main(int argc, const char *argv[]) {
 
   // {{{ Argument parsing
 
-  boost::program_options::options_description
-    desc("This is the splitter node of a P2PSP team.\n"
-         "The splitter is in charge of defining the Set or Rules (SoR) that will control the team. \n"
-         "By default, DBS (unicast transmissions) will be used.\n"
-         "Parameters");
+  const char description[80] = "This is the splitter node of a P2PSP team.\n"
+#if defined __IMS__
+      "Using IMS.\n"
+#elif defined __DBS__
+      "Using DBS.\n"
+#endif
+         "Parameters";
+  
+  boost::program_options::options_description desc(description);
 
   //~ {
 
-    int buffer_size = p2psp::SplitterIMS::GetDefaultBufferSize();
-    std::string channel = p2psp::SplitterIMS::GetDefaultChannel();
-    int chunk_size = p2psp::SplitterIMS::GetDefaultChunkSize();
-    //int header_size = p2psp::SplitterIMS::GetDefaultHeaderSize();
-    std::string mcast_addr = p2psp::SplitterIMS::GetDefaultMcastAddr();
-    int team_port = p2psp::SplitterIMS::GetDefaultTeamPort(); // GetDefaultTeamPort()
-    std::string source_addr = p2psp::SplitterIMS::GetDefaultSourceAddr();
-    int source_port = p2psp::SplitterIMS::GetDefaultSourcePort();
-    int TTL = p2psp::SplitterIMS::GetDefaultTTL();
-
+    int buffer_size = splitter.GetDefaultBufferSize();
+    std::string channel = splitter.GetDefaultChannel();
+    int chunk_size = splitter.GetDefaultChunkSize();
+    int team_port = splitter.GetDefaultTeamPort(); // GetDefaultTeamPort()
+    std::string source_addr = splitter.GetDefaultSourceAddr();
+    int source_port = splitter.GetDefaultSourcePort();
+#if defined __IMS__
+    std::string mcast_addr = splitter.GetDefaultMcastAddr();
+    int TTL = splitter.GetDefaultTTL();
+#elif defined __DBS__
     int max_number_of_chunk_loss = p2psp::SplitterDBS::GetDefaultMaxNumberOfChunkLoss();
     int max_number_of_monitors = p2psp::SplitterDBS::GetDefaultMaxNumberOfMonitors();
+#endif
 
     // TODO: strpe option should expect a list of arguments, not bool
     desc.add_options()
