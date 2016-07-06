@@ -26,9 +26,9 @@
 #include <signal.h>
 
 #if defined __IMS__
-Splitter_IMS splitter;
+p2psp::Splitter_IMS splitter;
 #elif defined __DBS__
-Splitter_DBS splitter;
+p2psp::Splitter_DBS splitter;
 #endif
 
 void HandlerCtrlC(int s) {
@@ -58,14 +58,14 @@ void HandlerEndOfExecution() {
   socket.close();
 }
 
-bool HasParameter(const boost::program_options::variables_map& vm,
+/*bool HasParameter(const boost::program_options::variables_map& vm,
 		  const std::string& param_name,
 		  char min_magic_flags) {
   if (!vm.count(param_name)) {
     return false;
   }
   return true;
-}
+  }*/
 
 int main(int argc, const char *argv[]) {
 
@@ -93,51 +93,30 @@ int main(int argc, const char *argv[]) {
     std::string mcast_addr = splitter.GetDefaultMcastAddr();
     int TTL = splitter.GetDefaultTTL();
 #elif defined __DBS__
-    int max_number_of_chunk_loss = p2psp::SplitterDBS::GetDefaultMaxNumberOfChunkLoss();
-    int max_number_of_monitors = p2psp::SplitterDBS::GetDefaultMaxNumberOfMonitors();
+    int max_number_of_chunk_loss = splitter.GetDefaultMaxNumberOfChunkLoss();
+    int max_number_of_monitors = splitterGetDefaultMaxNumberOfMonitors();
 #endif
 
     // TODO: strpe option should expect a list of arguments, not bool
     desc.add_options()
       ("help,h", "Produces this help message and exits.")
-      ("buffer_size",
-       boost::program_options::value<int>()->default_value(buffer_size),
-       "Size of the buffer in chunks.")
-      ("channel",
-       boost::program_options::value<std::string>()->default_value(channel),
-       "Name of the channel served by the streaming source.")
-      (
-       "chunk_size",
-       boost::program_options::value<int>()->default_value(chunk_size),
-       "Chunk size in bytes.")
-      /*(
-       "header_size",
-       boost::program_options::value<int>()->default_value(header_size),
-       "Size of the header of the stream in chunks.")*/
-      (
-       "max_number_of_chunk_loss",
-       boost::program_options::value<int>()->default_value(max_number_of_chunk_loss),
-       "Maximum number of lost chunks for an unsupportive peer. Makes sense only in unicast mode.")
-      (
-       "max_number_of_monitors",
-       boost::program_options::value<int>()->default_value(max_number_of_monitors),
-       "Maximum number of monitors in the team. The first connecting peers will automatically become monitors.")
-      (
-       "mcast_addr",
-       boost::program_options::value<std::string>()->default_value(mcast_addr),
-       "IP multicast address used to serve the chunks. Makes sense only in multicast mode.")
-      (
-       "team_port",
-       boost::program_options::value<int>()->default_value(team_port),
-       "Port to serve the peers.")
-      (
-       "source_addr",
-       boost::program_options::value<std::string>()->default_value(source_addr),
-       "IP address or hostname of the streaming server.")
-      (
-       "source_port",
-       boost::program_options::value<int>()->default_value(source_port),
-       "Port where the streaming server is listening.")
+      ("buffer_size", boost::program_options::value<int>()->default_value(buffer_size), "Size of the buffer in chunks.")
+      ("channel", boost::program_options::value<std::string>()->default_value(channel), "Name of the channel served by the streaming source.")
+      ("chunk_size", boost::program_options::value<int>()->default_value(chunk_size), "Chunk size in bytes.")
+#if defined __DBS__
+      ("max_number_of_chunk_loss", boost::program_options::value<int>()->default_value(max_number_of_chunk_loss), "Maximum number of lost chunks for an unsupportive peer. Makes sense only in unicast mode.")
+      ("max_number_of_monitors", boost::program_options::value<int>()->default_value(max_number_of_monitors), "Maximum number of monitors in the team. The first connecting peers will automatically become monitors.")
+#endif
+#if defined __IMS__
+      ("mcast_addr",boost::program_options::value<std::string>()->default_value(mcast_addr), "IP multicast address used to serve the chunks. Makes sense only in multicast mode.")
+#endif
+      ("team_port", boost::program_options::value<int>()->default_value(team_port), "Port to serve the peers.")
+      ("source_addr", boost::program_options::value<std::string>()->default_value(source_addr), "IP address or hostname of the streaming server.")
+      ("source_port", boost::program_options::value<int>()->default_value(source_port), "Port where the streaming server is listening.")
+#if defined __IMS__
+      ("TTL", boost::program_options::value<int>()->default_value(TTL), "Time To Live of the multicast messages.");
+#endif
+#ifdef _1_
       (
        "IMS", "Uses the IP multicast infrastructure, if available. IMS mode is incompatible with ACS, LRS, DIS and NTS modes.")
       (
@@ -157,10 +136,7 @@ int main(int argc, const char *argv[]) {
       (
        "strpe_log", boost::program_options::value<std::string>(),
        "Loggin STrPe & STrPe-DS specific data to file.")
-      (
-       "TTL", boost::program_options::value<int>()->default_value(TTL),
-       "Time To Live of the multicast messages.");
-  //~ }
+#endif
 
   boost::program_options::variables_map vm;
   try {
@@ -181,95 +157,77 @@ int main(int argc, const char *argv[]) {
 
   // }}}
 
-  is_IMS_only = false;
-  if (vm.count("strpe")) {
-    //splitter_ptr.reset(new p2psp::SplitterSTRPE());
-  } else if (vm.count("NTS")) {
-    LOG("NTS enabled");
-    //splitter_ptr.reset(new p2psp::SplitterNTS());
-  } else if (vm.count("LRS")) {
-    LOG("LRS enabled");
-    //splitter_ptr.reset(new p2psp::SplitterLRS());
-  } else if (vm.count("ACS")) {
-    LOG("ACS enabled");
-    //splitter_ptr.reset(new p2psp::SplitterACS());
-  } else if (vm.count("IMS")) {
-    LOG("IMS enabled");
-    is_IMS_only = true;
-    splitter_ptr.reset(new p2psp::SplitterIMS());
-  } else {
-    LOG("IMS enabled");
-    splitter_ptr.reset(new p2psp::SplitterDBS());
-  }
 
   if (vm.count("buffer_size")) {
-    splitter_ptr->SetBufferSize(vm["buffer_size"].as<int>());
-    TRACE("Buffer size = " << splitter_ptr->GetBufferSize());
+    splitter.SetBufferSize(vm["buffer_size"].as<int>());
+    TRACE("Buffer size = "
+	  << splitter.GetBufferSize());
   }
 
   if (vm.count("channel")) {
-    splitter_ptr->SetChannel(vm["channel"].as<std::string>());
+    splitter.SetChannel(vm["channel"].as<std::string>());
+    TRACE("Channel = "
+	  << splitter.GetChannel());
   }
 
   if (vm.count("chunk_size")) {
-    splitter_ptr->SetChunkSize(vm["chunk_size"].as<int>());
+    splitter.SetChunkSize(vm["chunk_size"].as<int>());
+    TRACE("Chunk size = "
+	  << splitter.GetChunkSize());
   }
 
-  /*if (vm.count("header_size")) {
-    splitter_ptr->SetHeaderSize(vm["header_size"].as<int>());
-    }*/
-
   if (vm.count("team_port")) {
-    splitter_ptr->SetTeamPort(vm["team_port"].as<int>());
+    splitter.SetTeamPort(vm["team_port"].as<int>());
+    TRACE("Team port = "
+	  << splitter.GetTeamPort());
   }
 
   if (vm.count("source_addr")) {
-    splitter_ptr->SetSourceAddr(vm["source_addr"].as<std::string>());
+    splitter.SetSourceAddr(vm["source_addr"].as<std::string>());
+    TRACE("Source address = "
+	  << splitter.GetSourceAddr());
   }
 
   if (vm.count("source_port")) {
-    splitter_ptr->SetSourcePort(vm["source_port"].as<int>());
+    splitter.SetSourcePort(vm["source_port"].as<int>());
+    TRACE("Source port = "
+	  << splitter.GetSourcePort());
   }
 
-  // Parameters if splitter is not IMS
-  if (HasParameter(vm, "max_number_of_chunk_loss", p2psp::Common::kDBS)) {
-    std::shared_ptr<p2psp::SplitterDBS> splitter_dbs =
-      std::static_pointer_cast<p2psp::SplitterDBS>(splitter_ptr);
-    splitter_dbs->SetMaxNumberOfChunkLoss(vm["max_number_of_chunk_loss"].as<int>());
+#if defined __DBS__
+  
+  if (vm.count("max_number_of_chunk_loss")) {
+    splitter.SetMaxNumberOfChunkLoss(vm["max_number_of_chunk_loss"].as<int>());
+    TRACE("Maximun number of lost chunks ="
+	  << splitter.GetMaxNumberOfChunkLoss());
   }
 
-  if (HasParameter(vm, "max_number_of_monitors", p2psp::Common::kDBS)) {
-    std::shared_ptr<p2psp::SplitterDBS> splitter_dbs =
-      std::static_pointer_cast<p2psp::SplitterDBS>(splitter_ptr);
+  if (vm.count("max_number_of_monitors")) {
     splitter_dbs->SetMaxNumberOfMonitors(vm["max_number_of_monitors"].as<int>());
+    TRACE("Maximun number of monitors = "
+	  << splitter.GetMaxNumberOfMonitors());
   }
 
-  // Parameters if STRPE
-  /*
-  if (HasParameter(vm, "strpe_log", p2psp::Common::kSTRPE)) {
-    std::shared_ptr<p2psp::SplitterSTRPE> splitter_strpe =
-      std::static_pointer_cast<p2psp::SplitterSTRPE>(splitter_ptr);
-    splitter_strpe->SetLogging(true);
-    splitter_strpe->SetLogFile(vm["strpe_log"].as<std::string>());
-  }
-  */
-  splitter_ptr->Start();
+#endif
+
+  splitter.Start();
+
 
   LOG("         | Received  | Sent      | Number       losses/ losses");
-  LOG("    Time | (kbps)    | (kbps)    | peers (peer) sents   threshold "
-      "period kbps");
-  LOG("---------+-----------+-----------+-----------------------------------.."
-      ".");
+  LOG("    Time | (kbps)    | (kbps)    | peers (peer) sents   threshold period kbps");
+  LOG("---------+-----------+-----------+-----------------------------------...");
 
-  int last_sendto_counter = splitter_ptr->GetSendToCounter();
-  int last_recvfrom_counter = splitter_ptr->GetRecvFromCounter();
+  int last_sendto_counter = splitter.GetSendToCounter();
+  int last_recvfrom_counter = splitter.GetRecvFromCounter();
 
   int chunks_sendto = 0;
   int kbps_sendto = 0;
   int kbps_recvfrom = 0;
   int chunks_recvfrom = 0;
+#if defined __DBS__
   std::vector<boost::asio::ip::udp::endpoint> peer_list;
-
+#endif
+  
   // Listen to Ctrl-C interruption
   struct sigaction sigIntHandler;
   sigIntHandler.sa_handler = HandlerCtrlC;
@@ -277,53 +235,48 @@ int main(int argc, const char *argv[]) {
   sigIntHandler.sa_flags = 0;
   sigaction(SIGINT, &sigIntHandler, NULL);
 
-  std::shared_ptr<p2psp::SplitterDBS> splitter_dbs;
-  if (!is_IMS_only) { // GetPeerList is only in DBS and derivated classes
-    splitter_dbs = std::static_pointer_cast<p2psp::SplitterDBS>(splitter_ptr);
-  }
-  /*std::shared_ptr<p2psp::SplitterACS> splitter_acs;
-  if (!is_IMS_only && splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) {
-    splitter_acs = std::static_pointer_cast<p2psp::SplitterACS>(splitter_ptr);
-    }*/
-  while (splitter_ptr->isAlive()) {
+  while (splitter.isAlive()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-    chunks_sendto = splitter_ptr->GetSendToCounter() - last_sendto_counter;
-    kbps_sendto = (chunks_sendto * splitter_ptr->GetChunkSize() * 8) / 1000;
-    chunks_recvfrom =
-      splitter_ptr->GetRecvFromCounter() - last_recvfrom_counter;
-    kbps_recvfrom = (chunks_recvfrom * splitter_ptr->GetChunkSize() * 8) / 1000;
-    last_sendto_counter = splitter_ptr->GetSendToCounter();
-    last_recvfrom_counter = splitter_ptr->GetRecvFromCounter();
+    chunks_sendto = splitter.GetSendToCounter() - last_sendto_counter;
+    kbps_sendto = (chunks_sendto * splitter.GetChunkSize() * 8) / 1000;
+    chunks_recvfrom = splitter.GetRecvFromCounter() - last_recvfrom_counter;
+    kbps_recvfrom = (chunks_recvfrom * splitter.GetChunkSize() * 8) / 1000;
+    last_sendto_counter = splitter.GetSendToCounter();
+    last_recvfrom_counter = splitter.GetRecvFromCounter();
 
+
+    
     LOG("|" << kbps_recvfrom << "|" << kbps_sendto << "|");
     // LOG(_SET_COLOR(_CYAN));
-
-    if (!is_IMS_only) { // GetPeerList is only in DBS and derivated classes
-      peer_list = splitter_dbs->GetPeerList();
-      LOG("Size peer list: " << peer_list.size());
-
-      if (peer_list.size()>0){
-        std::vector<boost::asio::ip::udp::endpoint>::iterator it;
-        for (it = peer_list.begin(); it != peer_list.end(); ++it) {
-          // _SET_COLOR(_BLUE);
-          LOG("Peer: " << *it);
-          // _SET_COLOR(_RED);
-
-          LOG(splitter_dbs->GetLoss(*it) << "/" << chunks_sendto << " "
-              << splitter_dbs->GetMaxNumberOfChunkLoss());
-
-          /*if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
-          // _SET_COLOR(_YELLOW);
-            LOG(splitter_acs->GetPeriod(*it));
-            // _SET_COLOR(_PURPLE)
-            LOG((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
-                 splitter_acs->GetChunkSize() * 8) /
-                1000);
-            splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
-	    }*/
-        }
+#if defined __DBS__
+    peer_list = splitter_dbs.GetPeerList();
+    LOG("Size peer list: " << peer_list.size());
+    
+    if (peer_list.size()>0){
+      std::vector<boost::asio::ip::udp::endpoint>::iterator it;
+      for (it = peer_list.begin(); it != peer_list.end(); ++it) {
+	// _SET_COLOR(_BLUE);
+	LOG("Peer: " << *it);
+	// _SET_COLOR(_RED);
+	
+	LOG(splitter.GetLoss(*it)
+	    << "/"
+	    << chunks_sendto
+	    << " "
+	    << splitter.GetMaxNumberOfChunkLoss());
+	
+	/*if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
+	// _SET_COLOR(_YELLOW);
+	LOG(splitter_acs->GetPeriod(*it));
+	// _SET_COLOR(_PURPLE)
+	LOG((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
+	splitter_acs->GetChunkSize() * 8) /
+	1000);
+	splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
+	}*/
       }
     }
+#endif     
   }
 
   LOG("Ending");
