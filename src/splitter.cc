@@ -90,7 +90,7 @@ int main(int argc, const char *argv[]) {
     int buffer_size = p2psp::SplitterIMS::GetDefaultBufferSize();
     std::string channel = p2psp::SplitterIMS::GetDefaultChannel();
     int chunk_size = p2psp::SplitterIMS::GetDefaultChunkSize();
-    int header_size = p2psp::SplitterIMS::GetDefaultHeaderSize();
+    //int header_size = p2psp::SplitterIMS::GetDefaultHeaderSize();
     std::string mcast_addr = p2psp::SplitterIMS::GetDefaultMcastAddr();
     int team_port = p2psp::SplitterIMS::GetDefaultTeamPort(); // GetDefaultTeamPort()
     std::string source_addr = p2psp::SplitterIMS::GetDefaultSourceAddr();
@@ -113,10 +113,10 @@ int main(int argc, const char *argv[]) {
        "chunk_size",
        boost::program_options::value<int>()->default_value(chunk_size),
        "Chunk size in bytes.")
-      (
+      /*(
        "header_size",
        boost::program_options::value<int>()->default_value(header_size),
-       "Size of the header of the stream in chunks.")
+       "Size of the header of the stream in chunks.")*/
       (
        "max_number_of_chunk_loss",
        boost::program_options::value<int>()->default_value(max_number_of_chunk_loss),
@@ -218,9 +218,9 @@ int main(int argc, const char *argv[]) {
     splitter_ptr->SetChunkSize(vm["chunk_size"].as<int>());
   }
 
-  if (vm.count("header_size")) {
+  /*if (vm.count("header_size")) {
     splitter_ptr->SetHeaderSize(vm["header_size"].as<int>());
-  }
+    }*/
 
   if (vm.count("team_port")) {
     splitter_ptr->SetTeamPort(vm["team_port"].as<int>());
