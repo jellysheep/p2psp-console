@@ -20,8 +20,11 @@
 #include <boost/program_options/variables_map.hpp>
 #include "common.h"
 #include "core/common.h"
-#include "core/peer_dbs.cc"
-#include "core/peer_ims.cc"
+#if defined __IMS__
+#include "core/peer_ims.h"
+#elif defined __DBS__
+#include "core/peer_dbs.h"
+#endif
 #include "util/trace.h"
 
 // }}}
