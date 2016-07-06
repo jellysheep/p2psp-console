@@ -52,7 +52,11 @@ namespace p2psp {
     };
     
     static const uint16_t kPlayerPort = 9999;
-    
+    static const std::string kChannel = "test.ogg";
+    static const std::string kSourceAddr = "127.0.0.1";
+    static const int kSourcePort = 8000;
+    static const int kHeaderSize = 1024; // bytes/header
+
     uint16_t player_port_ = kPlayerPort;
     io_service io_service_;
     ip::tcp::acceptor acceptor_;
@@ -60,6 +64,8 @@ namespace p2psp {
     ip::tcp::socket player_socket_;
     int header_size;
     struct Source source;
+    std::string GET_message_;
+    std::string channel_;
     
   public:
 
@@ -67,6 +73,29 @@ namespace p2psp {
 	       acceptor_(io_service_),
 	       source_socket_(io_service_),
 	       player_socket_(io_service_) {
+      header_size_ = kHeaderSize;
+      channel_ = kChannel;
+      SetGETMessage(channel_);
+      TRACE("Console initialized");
+    }
+
+    ~Console() {}
+    
+    std::string GetChannel() {
+      // {{{
+
+      return channel_;
+      
+      // }}}
+    }
+
+    void SetChannel(std::string channel) {
+      // {{{
+
+      channel_ = channel;
+      SetGETMessage(channel_);
+
+      // }}}
     }
 
     void SetSourceAddr(ip::address addr) {
@@ -98,7 +127,11 @@ namespace p2psp {
     }
 
     uint16_t GetSourcePort() {
+      // {{{
+      
       return source.port;
+
+      // }}}
     }
     
     static uint16_t GetDefaultSourcePort() {
@@ -109,11 +142,32 @@ namespace p2psp {
       // }}}
     }
 
+    void SetGETMessage(std::string channel) {
+      std::stringstream ss;
+      ss << "GET /" << channel << " HTTP/1.1\r\n"
+	 << "\r\n";
+      GET_message_ = ss.str();
+      ss.str("");
+    }
+
     void ConnectToTheSource() throw(boost::system::system_error) {
       // {{{
 
       ip::tcp::endpoint source_ep(this->source.addr, this->source.port);
-      source_socket_.connect(source_ep);
+      source_socket_.connect(source_ep, ec);
+
+      if (ec) {
+	ERROR(ec.message());
+	ERROR(source_socket_.local_endpoint().address().to_string()
+	    << "\b: unable to connect to the source ("
+	    << source.addr
+	    << ", "
+	    << to_string(source.port)
+	    << ")");
+	source_socket_.close();
+	exit(-1);
+      }
+      
       TRACE("Connected to the source at ("
 	    << this->source.addr.to_string()
 	    << ","
@@ -121,6 +175,28 @@ namespace p2psp {
 	    << ") from "
 	    << source_socket_.local_endpoint().address().to_string());
 
+      source_socket_.send(asio::buffer(GET_message_));
+
+      TRACE(source_socket_.local_endpoint().address().to_string()
+	    << "IMS: GET_message = "
+	    << GET_message_);
+      // }}}
+    }
+    
+    void RelayHeader() {
+      // {{{
+
+      boost::array<char, 128> buf;
+      //boost::system::error_code error;
+      for(;;) {
+
+	//size_t len = socket.read_some(boost::asio::buffer(buf), error);
+	size_t len = socket.read_some(boost::asio::buffer(buf));
+	if (len <= 0) break;
+	player_socket.send(boost::asio::buffer(buf,len));
+	//boost::asio::write(socket, boost::asio::buffer(message), ignored_error);
+      }
+      
       // }}}
     }
     
@@ -181,36 +257,6 @@ namespace p2psp {
       // }}}
     }
 
-    void RelayHeader() {
-      // {{{
-      
-      std::vector<char> header(header_size);
-      boost::system::error_code ec;
-      streambuf chunk;
-      read(splitter_socket_, chunk, transfer_exactly(header_size), ec);
-      
-      if (ec) {
-	ERROR(ec.message());
-	splitter_socket_.close();
-	//ConnectToTheSplitter();
-      }
-      
-      try {
-	write(player_socket_, chunk);
-      } catch (std::exception e) {
-	ERROR(e.what());
-	ERROR("error sending data to the player");
-	TRACE("len(data) =" << std::to_string(chunk.size()));
-	boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-      }
-      
-      TRACE("Received "
-	    << std::to_string(header_size)
-	    << " bytes of header");
-      
-      // }}}
-    }
-    
     bool PlayChunk(std::vector<char> chunk) {
       // {{{
 
