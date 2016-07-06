@@ -5,6 +5,7 @@
 //  THE_GENERAL_GNU_PUBLIC_LICENSE.txt for extending this information).
 //
 //  Copyright (C) 2016, the P2PSP team.
+//
 //  http://www.p2psp.org
 //
 //  This program waits for the connection of the player, retrieves the
