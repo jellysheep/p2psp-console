@@ -180,7 +180,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (vm.count("splitter_port")) {
-    splitter.SetTeamPort(vm["splitter_port"].as<int>());
+    splitter.SetSplitterPort(vm["splitter_port"].as<int>());
     TRACE("Splitter port = "
 	  << splitter.GetSplitterPort());
   }
