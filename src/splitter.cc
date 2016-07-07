@@ -92,6 +92,7 @@ int main(int argc, const char *argv[]) {
     int header_length = splitter.GetDefaultHeaderLength();
 #if defined __IMS__
     std::string mcast_addr = splitter.GetDefaultMcastAddr();
+    unsigned short mcast_port = splitter.GetDefaultMcastPort();
     int TTL = splitter.GetDefaultTTL();
 #elif defined __DBS__
     int max_number_of_chunk_loss = splitter.GetDefaultMaxNumberOfChunkLoss();
@@ -110,7 +111,8 @@ int main(int argc, const char *argv[]) {
       ("max_number_of_monitors", boost::program_options::value<int>()->default_value(max_number_of_monitors), "Maximum number of monitors in the team. The first connecting peers will automatically become monitors.")
 #endif
 #if defined __IMS__
-      ("mcast_addr",boost::program_options::value<std::string>()->default_value(mcast_addr), "IP multicast address used to serve the chunks.")
+      ("mcast_addr",boost::program_options::value<std::string>()->default_value(mcast_addr), "IP multicast address used to broadcast the chunks.")
+      ("mcast_port",boost::program_options::value<int>()->default_value(mcast_port), "IP multicast used used to broadcast the chunks.")
 #endif
       ("source_addr", boost::program_options::value<std::string>()->default_value(source_addr), "IP address or hostname of the streaming server.")
       ("source_port", boost::program_options::value<int>()->default_value(source_port), "Port where the streaming server is listening.")
@@ -178,6 +180,22 @@ int main(int argc, const char *argv[]) {
     TRACE("Chunk size = "
 	  << splitter.GetChunkSize());
   }
+
+#if defined __IMS__
+
+  if (vm.count("mcast_addr")) {
+    splitter.SetMcastAddr(vm["mcast_addr"].as<std::string>());
+    TRACE("IP multicast address = "
+	  << splitter.GetMcastAddr());
+  }
+
+  if (vm.count("mcast_port")) {
+    splitter.SetMcastPort(vm["mcast_port"].as<int>());
+    TRACE("IP multicast port = "
+	  << splitter.GetMcastPort());
+  }
+
+#endif
 
   if (vm.count("splitter_port")) {
     splitter.SetSplitterPort(vm["splitter_port"].as<int>());
