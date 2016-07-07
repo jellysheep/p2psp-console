@@ -48,7 +48,7 @@ void HandlerEndOfExecution() {
   boost::asio::ip::tcp::socket socket(io_service_);
   boost::asio::ip::tcp::endpoint endpoint(
       boost::asio::ip::address::from_string("127.0.0.1"),
-      splitter.GetTeamPort());
+      splitter.GetSplitterPort());
 
   socket.connect(endpoint, ec);
 
@@ -86,9 +86,10 @@ int main(int argc, const char *argv[]) {
     int buffer_size = splitter.GetDefaultBufferSize();
     std::string channel = splitter.GetDefaultChannel();
     int chunk_size = splitter.GetDefaultChunkSize();
-    int team_port = splitter.GetDefaultTeamPort(); // GetDefaultTeamPort()
+    int splitter_port = splitter.GetDefaultSplitterPort();
     std::string source_addr = splitter.GetDefaultSourceAddr();
     int source_port = splitter.GetDefaultSourcePort();
+    int header_length = splitter.GetDefaultHeaderLength();
 #if defined __IMS__
     std::string mcast_addr = splitter.GetDefaultMcastAddr();
     int TTL = splitter.GetDefaultTTL();
@@ -100,22 +101,24 @@ int main(int argc, const char *argv[]) {
     // TODO: strpe option should expect a list of arguments, not bool
     desc.add_options()
       ("help,h", "Produces this help message and exits.")
-      ("buffer_size", boost::program_options::value<int>()->default_value(buffer_size), "Size of the buffer in chunks.")
+      ("buffer_size", boost::program_options::value<int>()->default_value(buffer_size), "Length of the buffer in chunks.")
       ("channel", boost::program_options::value<std::string>()->default_value(channel), "Name of the channel served by the streaming source.")
       ("chunk_size", boost::program_options::value<int>()->default_value(chunk_size), "Chunk size in bytes.")
+      ("header_length", boost::program_options::value<int>()->default_value(header_length), "Size of the header of the stream in bytes.")
 #if defined __DBS__
-      ("max_number_of_chunk_loss", boost::program_options::value<int>()->default_value(max_number_of_chunk_loss), "Maximum number of lost chunks for an unsupportive peer. Makes sense only in unicast mode.")
+      ("max_number_of_chunk_loss", boost::program_options::value<int>()->default_value(max_number_of_chunk_loss), "Maximum number of lost chunks for an unsupportive peer.")
       ("max_number_of_monitors", boost::program_options::value<int>()->default_value(max_number_of_monitors), "Maximum number of monitors in the team. The first connecting peers will automatically become monitors.")
 #endif
 #if defined __IMS__
-      ("mcast_addr",boost::program_options::value<std::string>()->default_value(mcast_addr), "IP multicast address used to serve the chunks. Makes sense only in multicast mode.")
+      ("mcast_addr",boost::program_options::value<std::string>()->default_value(mcast_addr), "IP multicast address used to serve the chunks.")
 #endif
-      ("team_port", boost::program_options::value<int>()->default_value(team_port), "Port to serve the peers.")
       ("source_addr", boost::program_options::value<std::string>()->default_value(source_addr), "IP address or hostname of the streaming server.")
       ("source_port", boost::program_options::value<int>()->default_value(source_port), "Port where the streaming server is listening.")
 #if defined __IMS__
-      ("TTL", boost::program_options::value<int>()->default_value(TTL), "Time To Live of the multicast messages.");
+      ("TTL", boost::program_options::value<int>()->default_value(TTL), "Time To Live of the multicast messages.")
 #endif
+      ("splitter_port", boost::program_options::value<int>()->default_value(splitter_port), "Port to serve the peers.");
+
 #ifdef _1_
       (
        "IMS", "Uses the IP multicast infrastructure, if available. IMS mode is incompatible with ACS, LRS, DIS and NTS modes.")
@@ -176,10 +179,10 @@ int main(int argc, const char *argv[]) {
 	  << splitter.GetChunkSize());
   }
 
-  if (vm.count("team_port")) {
-    splitter.SetTeamPort(vm["team_port"].as<int>());
-    TRACE("Team port = "
-	  << splitter.GetTeamPort());
+  if (vm.count("splitter_port")) {
+    splitter.SetTeamPort(vm["splitter_port"].as<int>());
+    TRACE("Splitter port = "
+	  << splitter.GetSplitterPort());
   }
 
   if (vm.count("source_addr")) {

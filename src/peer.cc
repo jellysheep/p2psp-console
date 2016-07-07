@@ -317,39 +317,43 @@ namespace p2psp {
     {
 
       uint16_t player_port = Console::GetDefaultPlayerPort();
-      std::string source_addr = Console::GetDefaultSourceAddr().to_string();
-      uint16_t source_port = Console::GetDefaultSourcePort();
+      //      std::string source_addr = Console::GetDefaultSourceAddr().to_string();
+      //      uint16_t source_port = Console::GetDefaultSourcePort();
       std::string splitter_addr = p2psp::Peer_core::GetDefaultSplitterAddr().to_string();
       uint16_t splitter_port = p2psp::Peer_core::GetDefaultSplitterPort();
-#ifdef __DBS__
+#if defined __DBS__
       int max_chunk_debt = p2psp::Peer_DBS::GetDefaultMaxChunkDebt();
-#endif
       uint16_t team_port = p2psp::Peer_core::GetDefaultTeamPort();
-#ifdef __NTS__
+#endif
+#if defined __NTS__
       int source_port_step = 0;
 #endif
-      std::string channel = Console::GetDefaultChannel();
-      int header_length = Console::GetDefaultHeaderSize();
+      //      std::string channel = Console::GetDefaultChannel();
+      //      int header_length = Console::GetDefaultHeaderSize();
 
       // TODO: strpe option should expect a list of arguments, not bool
       desc.add_options()
         ("help,h", "Produce this help message and exits.")
-	("channel", boost::program_options::value<std::string>()->default_value(channel), "Name of the channel served by the streaming source.")
+	//	("channel", boost::program_options::value<std::string>()->default_value(channel), "Name of the channel served by the streaming source.")
+#if defined __DBS__
         ("enable_chunk_loss", boost::program_options::value<std::string>(), "Forces a lost of chunks.")
-	("header_length", boost::program_options::value<int>()->default_value(header_length), "Size of the header of the stream in chunks.")
-#ifdef __DBS__
+#endif
+	//("header_length", boost::program_options::value<int>()->default_value(header_length), "Size of the header of the stream in chunks.")
+#if defined __DBS__
         ("max_chunk_debt", boost::program_options::value<int>()->default_value(max_chunk_debt), "Maximum number of times that other peer can not send a chunk to this peer.")
 #endif
         ("player_port", boost::program_options::value<uint16_t>()->default_value(player_port), "Port to communicate with the player.")
-#ifdef __NTS__
+#if defined __NTS__
         ("source_port_step", boost::program_options::value<int>()->default_value(source_port_step), "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
 #endif
-        ("source_addr", boost::program_options::value<std::string>()->default_value(source_addr), "IP address or hostname of the source.")
-        ("source_port", boost::program_options::value<uint16_t>()->default_value(source_port), "Listening port of the source.")
+        //("source_addr", boost::program_options::value<std::string>()->default_value(source_addr), "IP address or hostname of the source.")
+        //("source_port", boost::program_options::value<uint16_t>()->default_value(source_port), "Listening port of the source.")
         ("splitter_addr", boost::program_options::value<std::string>()->default_value(splitter_addr), "IP address or hostname of the splitter.")
         ("splitter_port", boost::program_options::value<uint16_t>()->default_value(splitter_port), "Listening port of the splitter.")
+#if not defined __IMS__
         ("team_port", boost::program_options::value<uint16_t>()->default_value(team_port), "Port to communicate with the peers. By default the OS will chose it.")
         ("use_localhost", "Forces the peer to use localhost instead of the IP of the adapter to connect to the splitter." "Notice that in this case, peers that run outside of the host will not be able to communicate with this peer.")
+#endif
         //"malicious",
         // boost::program_options::value<bool>()->implicit_value(true),
         //"Enables the malicious activity for peer.")(
@@ -372,7 +376,10 @@ namespace p2psp {
         // "strpeds", boost::program_options::value<bool>()->implicit_value(true),
         // "Enables STrPe-DS")(
         //("strpe_log", "Logging STrPe & STrPe-DS specific data to file.")
-        ("monitor", "The peer is a monitor");
+#if defined __DBS__
+        ("monitor", "The peer is a monitor")
+#endif
+	;
 
     }
 
@@ -397,48 +404,14 @@ namespace p2psp {
 
     class Console console;
     
-    if (vm.count("channel")) {
-      console.SetChannel(vm["channel"].as<std::string>());
-      TRACE("Channel = "
-	    << console.GetChannel());
-    }
-
     if (vm.count("player_port")) {
       console.SetPlayerPort(vm["player_port"].as<uint16_t>());
       TRACE("Player port = "
 	    << console.GetPlayerPort());
     }
 
-    if (vm.count("header_length")) {
-      console.SetHeaderSize(vm["header_length"].as<int>());
-      TRACE("Header size = "
-	    << console.GetHeaderSize());
-    }
-
     console.WaitForThePlayer();
     TRACE("Player connected");
-
-    if (vm.count("source_addr")) {
-      console.SetSourceAddr(ip::address::from_string(vm["source_addr"].as<std::string>()));
-      TRACE("Source address = "
-	    << console.GetSourceAddr());
-    }
-
-    if (vm.count("source_port")) {
-      // {{{
-      
-      console.SetSourcePort(vm["source_port"].as<uint16_t>());
-      TRACE("Source port = "
-	    << console.GetSourcePort());
-      
-      // }}}
-    }
-    
-    console.ConnectToTheSource();
-    TRACE("Connected to the source");
-
-    console.RelayHeader();
-    TRACE("Header relayed");
 
     if (vm.count("splitter_addr")) {
       console.SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
@@ -459,7 +432,45 @@ namespace p2psp {
     console.ConnectToTheSplitter();
     TRACE("Connected to the splitter");
 
+    console.ReceiveSourceEndpoint();
+    TRACE("Source = ("
+	  << console.GetSourceAddr()
+	  << ","
+	  << std::to_string(console.GetSourcePort())
+	  << ")");
+
+    console.ConnectToTheSource();
+    TRACE("Connected to the source");
+
+    console.ReceiveChannel();
+    /*if (vm.count("channel")) {
+      console.SetChannel(vm["channel"].as<std::string>());
+      TRACE("Channel = "
+	    << console.GetChannel());
+	    }*/
+
+    console.ReceiveHeaderLength();
+    TRACE("Header length = "
+	    << console.GetHeaderLength());
+        /*if (vm.count("header_length")) {
+      console.SetHeaderSize(vm["header_length"].as<int>());
+      TRACE("Header size = "
+	    << console.GetHeaderSize());
+	    }*/
+
+    console.RelayHeader();
+    TRACE("Header relayed");
+    
+    console.ReceiveChunkSize();
+    TRACE("Chunk size = "
+	  << console.GetChunkSize());
+
+    console.ReceiveBufferSize();
+    TRACE("Buffer size = "
+	  << console.GetBufferSize());
+
 #if defined __IMS__
+
     TRACE("Using IMS");
     
     console.ReceiveMcastGroup();
@@ -514,37 +525,31 @@ namespace p2psp {
 	  << Console.GetPortStep());
     
 #endif
-
-    console.ReceiveChunkSize();
-    TRACE("Chunk size = "
-	  << console.GetChunkSize());
-
-    console.ReceiveBufferSize();
-    TRACE("Buffer size = "
-	  << console.GetBufferSize());
     
     console.Init();
 
 #if defined __IMS__
-    console.ListenToTheTeam();
-#else
-    // {{{
     
-    console.ReceiveTheNumberOfPeers();
-    TRACE("Number of peers in the team (excluding me) ="
-	  << std::to_string(console.GetNumberOfPeers()));
+    console.ListenToTheTeam();
+
+#else
     
     console.ListenToTheTeam();
     TRACE("Listening to the team");
     
+    //console.ReceiveTheNumberOfPeers();
     console.ReceiveTheListOfPeers();
     TRACE("List of peers received");
+    TRACE("Number of peers in the team (excluding me) ="
+	  << std::to_string(console.GetNumberOfPeers()));
+
 #endif    
 
     console.DisconnectFromTheSplitter();
     TRACE("Recived the configuration from the splitter.");
     TRACE("Clossing the connection");
-    
+
+    TRACE("Buffering ...");
     console.BufferData();
     TRACE("Buffering done");
 
