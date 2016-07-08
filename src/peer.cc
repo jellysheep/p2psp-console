@@ -56,7 +56,8 @@ namespace p2psp {
     int header_length_;
     struct Source source;
     std::string GET_message_;
-    std::string channel_;
+    //std::string channel_;
+    boost::array<char, 80> channel_;
     
   public:
 
@@ -64,26 +65,63 @@ namespace p2psp {
 	       acceptor_(io_service_),
 	       source_socket_(io_service_),
 	       player_socket_(io_service_) {
-      header_length_ = GetDefaultHeaderSize();
-      channel_ = GetDefaultChannel();
-      SetGETMessage(channel_);
+      //header_length_ = GetDefaultHeaderSize();
+      //channel_ = GetDefaultChannel();
+      //SetGETMessage(channel_);
       TRACE("Console initialized");
     }
 
     ~Console() {}
-    
+
+    void ReceiveChannel() {
+      splitter_socket_.receive(boost::asio::buffer(channel_));
+      TRACE("channel = " << std::to_string(channel_));
+      SetGETMessage(channel_)
+    }
+
+    void ReceiveHeaderLength() {
+      boost::array<char, 2> buffer;
+      read(splitter_socket_, ::buffer(buffer));
+      
+      header_length_ = ntohs(*(short *)(buffer.c_array()));
+      
+      TRACE("header_length (in bytes) = "
+	    << std::to_string(header_length_));
+    }
+  
     static std::string GetDefaultChannel() {
       return "BBB-143.ogv";
     }
 
     static int GetDefaultHeaderSize() {
-      return 8192;
+      return 4096;
     }
 
     std::string GetChannel() {
       // {{{
 
       return channel_;
+      
+      // }}}
+    }
+
+    void ReceiveSourceEndpoint() {
+      // {{{
+      
+      boost::array<char, 6> buffer;
+      read(splitter_socket_, ::buffer(buffer));
+      
+      char *raw_data = buffer.data();
+      
+      in_addr ip_raw = *(in_addr *)(raw_data);
+      source.addr = ip::address::from_string(inet_ntoa(ip_raw));
+      source.port = ntohs(*(short *)(raw_data + 4));
+      
+      TRACE("source_endpoint = ("
+	    << source.addr.to_string()
+	    << ","
+	    << std::to_string(source.port)
+	    << ")");
       
       // }}}
     }
@@ -416,7 +454,7 @@ namespace p2psp {
     if (vm.count("splitter_addr")) {
       console.SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
       TRACE("Splitter address = "
-	    << console.GetSourceAddr());
+	    << console.GetSplitterAddr());
     }
 
     if (vm.count("splitter_port")) {
