@@ -45,19 +45,18 @@ namespace p2psp {
 
     struct Source {
       ip::address addr;
-      uint16_t port;
+      PORT port;
     };
     
-    uint16_t player_port_;
+    PORT player_port_;
     io_service io_service_;
     ip::tcp::acceptor acceptor_;
     ip::tcp::socket source_socket_;
     ip::tcp::socket player_socket_;
-    int header_length_;
+    HEADER_SIZE header_size_;
     struct Source source;
     std::string GET_message_;
-    //std::string channel_;
-    boost::array<char, 80> channel_;
+    std::string channel_;
     
   public:
 
@@ -65,49 +64,21 @@ namespace p2psp {
 	       acceptor_(io_service_),
 	       source_socket_(io_service_),
 	       player_socket_(io_service_) {
-      //header_length_ = GetDefaultHeaderSize();
+      // {{{
+
+      //header_size_ = GetDefaultHeaderSize();
       //channel_ = GetDefaultChannel();
       //SetGETMessage(channel_);
       TRACE("Console initialized");
+
+      // }}}
     }
 
     ~Console() {}
 
-    void ReceiveChannel() {
-      splitter_socket_.receive(boost::asio::buffer(channel_));
-      TRACE("channel = " << std::to_string(channel_));
-      SetGETMessage(channel_)
-    }
-
-    void ReceiveHeaderLength() {
-      boost::array<char, 2> buffer;
-      read(splitter_socket_, ::buffer(buffer));
-      
-      header_length_ = ntohs(*(short *)(buffer.c_array()));
-      
-      TRACE("header_length (in bytes) = "
-	    << std::to_string(header_length_));
-    }
-  
-    static std::string GetDefaultChannel() {
-      return "BBB-143.ogv";
-    }
-
-    static int GetDefaultHeaderSize() {
-      return 4096;
-    }
-
-    std::string GetChannel() {
-      // {{{
-
-      return channel_;
-      
-      // }}}
-    }
-
     void ReceiveSourceEndpoint() {
       // {{{
-      
+
       boost::array<char, 6> buffer;
       read(splitter_socket_, ::buffer(buffer));
       
@@ -122,23 +93,6 @@ namespace p2psp {
 	    << ","
 	    << std::to_string(source.port)
 	    << ")");
-      
-      // }}}
-    }
-
-    void SetChannel(std::string channel) {
-      // {{{
-
-      channel_ = channel;
-      SetGETMessage(channel_);
-
-      // }}}
-    }
-
-    void SetSourceAddr(ip::address addr) {
-      // {{{
-
-      source.addr = addr;
 
       // }}}
     }
@@ -148,56 +102,122 @@ namespace p2psp {
       
       return source.addr;
 
-      // {{{
+      // }}}
     }
     
-    static ip::address GetDefaultSourceAddr() {
-      // {{{
-
-      return ip::address::from_string("127.0.0.1");
-
-      // }}}
-    }
-
-    void SetSourcePort(uint16_t port) {
-      // {{{
-
-      source.port = port;
-
-      // }}}
-    }
-
-    uint16_t GetSourcePort() {
+    PORT GetSourcePort() {
       // {{{
       
       return source.port;
 
       // }}}
     }
-    
-    uint16_t GetHeaderLength() {
+
+    void SetGETMessage() {
+      // {{{
+
+      std::stringstream ss;
+      ss << "GET /" << channel_ << " HTTP/1.1\r\n"
+	 << "\r\n";
+      GET_message_ = ss.str();
+
+      TRACE("GET_message = "
+	    << GET_message_);
+
+      ss.str("");
+
+      // }}}
+    }
+
+    void ReceiveChannel() {
+      // {{{
+
+      splitter_socket_.receive(boost::asio::buffer(channel_));
+      TRACE("channel = "
+	    << channel_);
+      SetGETMessage();
+
+      // }}}
+    }
+
+    std::string GetChannel() {
+      // {{{
+
+      return channel_;
+      
+      // }}}
+    }
+
+    void ReceiveHeaderSize() {
+      // {{{
+
+      boost::array<char, 2> buffer;
+      read(splitter_socket_, ::buffer(buffer));
+      
+      header_size_ = ntohs(*(short *)(buffer.c_array()));
+      
+      TRACE("header_size (in bytes) = "
+	    << std::to_string(header_size_));
+
+      // }}}
+    }
+  
+    /*static std::string GetDefaultChannel() {
+      return "BBB-143.ogv";
+      }*/
+
+    /*static int GetDefaultHeaderSize() {
+      return 4096;
+      }*/
+
+    /*void SetChannel(std::string channel) {
+      // {{{
+
+      channel_ = channel;
+      SetGETMessage(channel_);
+
+      // }}}
+      }*/
+
+    /*void SetSourceAddr(ip::address addr) {
+      // {{{
+
+      source.addr = addr;
+
+      // }}}
+      }*/
+
+    /*static ip::address GetDefaultSourceAddr() {
+      // {{{
+
+      return ip::address::from_string("127.0.0.1");
+
+      // }}}
+      }*/
+
+    /*void SetSourcePort(uint16_t port) {
+      // {{{
+
+      source.port = port;
+
+      // }}}
+      }*/
+
+    HEADER_SIZE GetHeaderSize() {
       // {{{
       
-      return header_length_;
+      return header_size_;
 
       // }}}
     }
     
-    static uint16_t GetDefaultSourcePort() {
+    /*static uint16_t GetDefaultSourcePort() {
       // {{{
 
       return 8000;
 
       // }}}
-    }
-
-    void SetGETMessage(std::string channel) {
-      std::stringstream ss;
-      ss << "GET /" << channel << " HTTP/1.1\r\n"
-	 << "\r\n";
-      GET_message_ = ss.str();
-      ss.str("");
-    }
+      }*/
 
     void ConnectToTheSource() throw(boost::system::system_error) {
       // {{{
@@ -225,11 +245,11 @@ namespace p2psp {
 	    << ") from "
 	    << source_socket_.local_endpoint().address().to_string());
 
-      source_socket_.send(asio::buffer(GET_message_));
-
-      TRACE("GET_message = "
-	    << GET_message_);
       // }}}
+    }
+
+    void RequestHeader() {
+      source_socket_.send(asio::buffer(GET_message_));      
     }
     
     void RelayHeader() {
@@ -237,7 +257,7 @@ namespace p2psp {
             
       boost::array<char, 128> buf;
       //boost::system::error_code error;
-      for(int header_load_counter_ = 0; header_load_counter_ < GetHeaderLength();) {
+      for(int header_load_counter_ = 0; header_load_counter_ < GetHeaderSize();) {
 
 	//size_t len = socket.read_some(boost::asio::buffer(buf), error);
 	size_t len = source_socket_.read_some(boost::asio::buffer(buf));
@@ -280,21 +300,13 @@ namespace p2psp {
       // }}}
     }
 
-    void SetHeaderSize(int header_length) {
+    /*void SetHeaderSize(int header_size) {
       // {{{
 
-      this->header_length_ = header_length;
+      this->header_size_ = header_size;
 
       // }}}
-    }
-
-    int GetHeaderSize() {
-      // {{{
-      
-      return this->header_length_;
-      
-      // }}}
-    }
+      }*/
 
     bool PlayChunk(std::vector<char> chunk) {
       // {{{
@@ -367,7 +379,7 @@ namespace p2psp {
       int source_port_step = 0;
 #endif
       //      std::string channel = Console::GetDefaultChannel();
-      //      int header_length = Console::GetDefaultHeaderSize();
+      //      int header_size = Console::GetDefaultHeaderSize();
 
       // TODO: strpe option should expect a list of arguments, not bool
       desc.add_options()
@@ -376,7 +388,7 @@ namespace p2psp {
 #if defined __DBS__
         ("enable_chunk_loss", boost::program_options::value<std::string>(), "Forces a lost of chunks.")
 #endif
-	//("header_length", boost::program_options::value<int>()->default_value(header_length), "Size of the header of the stream in chunks.")
+	//("header_size", boost::program_options::value<int>()->default_value(header_size), "Size of the header of the stream in chunks.")
 #if defined __DBS__
         ("max_chunk_debt", boost::program_options::value<int>()->default_value(max_chunk_debt), "Maximum number of times that other peer can not send a chunk to this peer.")
 #endif
@@ -481,21 +493,27 @@ namespace p2psp {
     TRACE("Connected to the source");
 
     console.ReceiveChannel();
+    TRACE("channel = "
+	  << console.GetChannel());
+    
     /*if (vm.count("channel")) {
       console.SetChannel(vm["channel"].as<std::string>());
       TRACE("Channel = "
 	    << console.GetChannel());
 	    }*/
 
-    console.ReceiveHeaderLength();
-    TRACE("Header length = "
-	    << console.GetHeaderLength());
-        /*if (vm.count("header_length")) {
-      console.SetHeaderSize(vm["header_length"].as<int>());
+    console.ReceiveHeaderSize();
+    TRACE("Header size = "
+	    << console.GetHeaderSize());
+        /*if (vm.count("header_size")) {
+      console.SetHeaderSize(vm["header_size"].as<int>());
       TRACE("Header size = "
 	    << console.GetHeaderSize());
 	    }*/
 
+    console.RequestHeader();
+    TRACE("Header requested");
+    
     console.RelayHeader();
     TRACE("Header relayed");
     
