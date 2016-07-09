@@ -298,8 +298,8 @@ int main(int argc, const char *argv[]) {
   splitter.Start();
 
 #if defined __IMS__
-  std::cout << "                     | Received  | Sent      |" << std::endl;
-  std::cout << "                Time | (kbps)    | (kbps)    |" << std::endl;
+  std::cout << "                     |  Received |      Sent |" << std::endl;
+  std::cout << "                Time |    (kbps) |    (kbps) |" << std::endl;
   std::cout << "---------------------+-----------+-----------+" << std::endl;
 #else
   O("         | Received  | Sent      | Number       losses/ losses");
@@ -344,10 +344,10 @@ int main(int argc, const char *argv[]) {
     last_sendto_counter = splitter.GetSendToCounter();
     last_recvfrom_counter = splitter.GetRecvFromCounter();
     std::cout << " |";
-    std::cout << std::setw(11) << kbps_recvfrom;
-    std::cout << "|";
-    std::cout << std::setw(11) << kbps_sendto;
-    std::cout << "|" << std::endl;
+    std::cout << std::setw(10) << kbps_recvfrom;
+    std::cout << " |";
+    std::cout << std::setw(10) << kbps_sendto;
+    std::cout << " |" << std::endl;
 
     // O(_SET_COLOR(_CYAN));
 #if defined __DBS__

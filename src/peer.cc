@@ -144,9 +144,6 @@ namespace p2psp {
       {
 	std::vector<char> messagex(channel_size);
 	boost::asio::read(splitter_socket_, boost::asio::buffer(messagex/*, channel_size*/));
-	for(int i=0; i<channel_size; i++) {
-	  cout << i << ' ' << messagex[i] << '\n';
-      }
       
 	channel_ = std::string(messagex.data(), channel_size);
       }
@@ -650,11 +647,11 @@ namespace p2psp {
     console.Start();
     TRACE("Peer running in a thread");
     
-    O("+-----------------------------------------------------+");
-    O("| Received = Received kbps, including retransmissions |");
-    O("|     Sent = Sent kbps                                |");
-    O("|       (Expected values are between parenthesis)     |");
-    O("------------------------------------------------------+");
+    std::cout << "+-----------------------------------------------------+" << std::endl;
+    std::cout << "| Received = Received kbps, including retransmissions |" << std::endl;
+    std::cout << "|     Sent = Sent kbps                                |" << std::endl;
+    std::cout << "|       (Expected values are between parenthesis)     |" << std::endl;
+    std::cout << "------------------------------------------------------+" << std::endl;
     O("");
     O("         |     Received (kbps) |          Sent (kbps) |");
     O("    Time |      Real  Expected |       Real  Expected | Team description");
