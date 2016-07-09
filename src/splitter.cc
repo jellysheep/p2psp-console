@@ -9,7 +9,7 @@
 //  http://www.p2psp.org
 //
 
-// {{{
+// {{{ includes
 
 #include <iostream>
 #include <memory>
@@ -27,6 +27,10 @@
 #include <boost/program_options/variables_map.hpp>
 #include <signal.h>
 
+// Time
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/local_time_adjustor.hpp>
+#include <boost/date_time/c_local_time_adjustor.hpp>
 // }}}
 
 #if defined __IMS__
@@ -294,9 +298,9 @@ int main(int argc, const char *argv[]) {
   splitter.Start();
 
 #if defined __IMS__
-  O("         | Received  | Sent      | Number       losses/ losses");
-  O("    Time | (kbps)    | (kbps)    | peers (peer) sents   threshold period kbps");
-  O("---------+-----------+-----------+-----------------------------------...");
+  std::cout << "                     | Received  | Sent      |" << std::endl;
+  std::cout << "                Time | (kbps)    | (kbps)    |" << std::endl;
+  std::cout << "---------------------+-----------+-----------+" << std::endl;
 #else
   O("         | Received  | Sent      | Number       losses/ losses");
   O("    Time | (kbps)    | (kbps)    | peers (peer) sents   threshold period kbps");
@@ -322,12 +326,16 @@ int main(int argc, const char *argv[]) {
   sigaction(SIGINT, &sigIntHandler, NULL);
 
   while (splitter.isAlive()) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-    time_t t = time(0);
-    struct tm * now = localtime( & t );
-    std::cout << (now->tm_year + 1900) << '-' 
-         << (now->tm_mon + 1) << '-'
-         <<  now->tm_mday;
+    
+    { /* Print current time */
+      boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+      using boost::posix_time::ptime;
+      using boost::posix_time::second_clock;
+      using boost::posix_time::to_simple_string;
+      using boost::gregorian::day_clock;
+      ptime todayUtc(day_clock::universal_day(), second_clock::universal_time().time_of_day());
+      std::cout << to_simple_string(todayUtc);
+    }
     
     chunks_sendto = splitter.GetSendToCounter() - last_sendto_counter;
     kbps_sendto = (chunks_sendto * splitter.GetChunkSize() * 8) / 1000;
@@ -335,10 +343,12 @@ int main(int argc, const char *argv[]) {
     kbps_recvfrom = (chunks_recvfrom * splitter.GetChunkSize() * 8) / 1000;
     last_sendto_counter = splitter.GetSendToCounter();
     last_recvfrom_counter = splitter.GetRecvFromCounter();
+    std::cout << " |";
+    std::cout << std::setw(11) << kbps_recvfrom;
+    std::cout << "|";
+    std::cout << std::setw(11) << kbps_sendto;
+    std::cout << "|" << std::endl;
 
-
-    
-    O("|" << kbps_recvfrom << "|" << kbps_sendto << "|");
     // O(_SET_COLOR(_CYAN));
 #if defined __DBS__
     peer_list = splitter.GetPeerList();
