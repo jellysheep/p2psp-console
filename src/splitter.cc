@@ -9,6 +9,8 @@
 //  http://www.p2psp.org
 //
 
+// {{{
+
 #include <iostream>
 #include <memory>
 #include "common.h"
@@ -25,6 +27,8 @@
 #include <boost/program_options/variables_map.hpp>
 #include <signal.h>
 
+// }}}
+
 #if defined __IMS__
 p2psp::Splitter_IMS splitter;
 #elif defined __DBS__
@@ -32,13 +36,19 @@ p2psp::Splitter_DBS splitter;
 #endif
 
 void HandlerCtrlC(int s) {
-  LOG("Keyboard interrupt detected ... Exiting!");
+  // {{{
+
+  O("Keyboard interrupt detected ... Exiting!");
 
   // Say to daemon threads that the work has been finished,
   splitter.SetAlive(false);
+
+  // }}}
 }
 
 void HandlerEndOfExecution() {
+  // {{{
+
   // Wake up the "moderate_the_team" daemon, which is waiting in a recvfrom().
   //splitter_ptr->SayGoodbye();
 
@@ -56,16 +66,9 @@ void HandlerEndOfExecution() {
   // with multiple receive calls in order to read the configuration sent by the
   // splitter
   socket.close();
-}
 
-/*bool HasParameter(const boost::program_options::variables_map& vm,
-		  const std::string& param_name,
-		  char min_magic_flags) {
-  if (!vm.count(param_name)) {
-    return false;
-  }
-  return true;
-  }*/
+  // }}}
+}
 
 int main(int argc, const char *argv[]) {
 
@@ -162,88 +165,144 @@ int main(int argc, const char *argv[]) {
 
   // }}}
 
-
   if (vm.count("buffer_size")) {
+    // {{{
+
     splitter.SetBufferSize(vm["buffer_size"].as<int>());
     TRACE("Buffer size = "
 	  << splitter.GetBufferSize());
+
+    // }}}
   }
 
   if (vm.count("channel")) {
+    // {{{
+
     splitter.SetChannel(vm["channel"].as<std::string>());
     TRACE("Channel = "
 	  << splitter.GetChannel());
+
+    // }}}
   }
 
   if (vm.count("chunk_size")) {
+    // {{{
+
     splitter.SetChunkSize(vm["chunk_size"].as<int>());
     TRACE("Chunk size = "
 	  << splitter.GetChunkSize());
+
+    // }}}
   }
 
   if (vm.count("header_size")) {
+    // {{{
+
     splitter.SetHeaderSize(vm["header_size"].as<int>());
     TRACE("Header size = "
 	  << splitter.GetHeaderSize());
+
+    // }}}
   }
 
 #if defined __IMS__
 
+  // {{{
+
   if (vm.count("mcast_addr")) {
+    // {{{
+
     splitter.SetMcastAddr(vm["mcast_addr"].as<std::string>());
     TRACE("IP multicast address = "
 	  << splitter.GetMcastAddr());
+
+    // }}}
   }
 
   if (vm.count("mcast_port")) {
+    // {{{
+
     splitter.SetMcastPort(vm["mcast_port"].as<int>());
     TRACE("IP multicast port = "
 	  << splitter.GetMcastPort());
+
+    // }}}
   }
+
+  // }}}
 
 #endif
 
   if (vm.count("splitter_port")) {
+    // {{{
+
     splitter.SetSplitterPort(vm["splitter_port"].as<int>());
     TRACE("Splitter port = "
 	  << splitter.GetSplitterPort());
+
+    // }}}
   }
 
   if (vm.count("source_addr")) {
+    // {{{
+
     splitter.SetSourceAddr(vm["source_addr"].as<std::string>());
     TRACE("Source address = "
 	  << splitter.GetSourceAddr());
+
+    // }}}
   }
 
   if (vm.count("source_port")) {
+    // {{{
+
     splitter.SetSourcePort(vm["source_port"].as<int>());
     TRACE("Source port = "
 	  << splitter.GetSourcePort());
+
+    // }}}
   }
 
 #if defined __DBS__
   
+  // {{{
+
   if (vm.count("max_number_of_chunk_loss")) {
+    // {{{
+
     splitter.SetMaxNumberOfChunkLoss(vm["max_number_of_chunk_loss"].as<int>());
     TRACE("Maximun number of lost chunks ="
 	  << splitter.GetMaxNumberOfChunkLoss());
   }
 
+  // }}}
+
   if (vm.count("max_number_of_monitors")) {
-    splitter_dbs->SetMaxNumberOfMonitors(vm["max_number_of_monitors"].as<int>());
+    // {{{
+
+    splitter.SetMaxNumberOfMonitors(vm["max_number_of_monitors"].as<int>());
     TRACE("Maximun number of monitors = "
 	  << splitter.GetMaxNumberOfMonitors());
+
+    // }}}
   }
+
+  // }}}
 
 #endif
 
   splitter.Start();
 
-
-  LOG("         | Received  | Sent      | Number       losses/ losses");
-  LOG("    Time | (kbps)    | (kbps)    | peers (peer) sents   threshold period kbps");
-  LOG("---------+-----------+-----------+-----------------------------------...");
-
+#if defined __IMS__
+  O("         | Received  | Sent      | Number       losses/ losses");
+  O("    Time | (kbps)    | (kbps)    | peers (peer) sents   threshold period kbps");
+  O("---------+-----------+-----------+-----------------------------------...");
+#else
+  O("         | Received  | Sent      | Number       losses/ losses");
+  O("    Time | (kbps)    | (kbps)    | peers (peer) sents   threshold period kbps");
+  O("---------+-----------+-----------+-----------------------------------...");
+#endif
+  
   int last_sendto_counter = splitter.GetSendToCounter();
   int last_recvfrom_counter = splitter.GetRecvFromCounter();
 
@@ -264,6 +323,12 @@ int main(int argc, const char *argv[]) {
 
   while (splitter.isAlive()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+    time_t t = time(0);
+    struct tm * now = localtime( & t );
+    std::cout << (now->tm_year + 1900) << '-' 
+         << (now->tm_mon + 1) << '-'
+         <<  now->tm_mday;
+    
     chunks_sendto = splitter.GetSendToCounter() - last_sendto_counter;
     kbps_sendto = (chunks_sendto * splitter.GetChunkSize() * 8) / 1000;
     chunks_recvfrom = splitter.GetRecvFromCounter() - last_recvfrom_counter;
@@ -273,20 +338,20 @@ int main(int argc, const char *argv[]) {
 
 
     
-    LOG("|" << kbps_recvfrom << "|" << kbps_sendto << "|");
-    // LOG(_SET_COLOR(_CYAN));
+    O("|" << kbps_recvfrom << "|" << kbps_sendto << "|");
+    // O(_SET_COLOR(_CYAN));
 #if defined __DBS__
-    peer_list = splitter_dbs.GetPeerList();
-    LOG("Size peer list: " << peer_list.size());
+    peer_list = splitter.GetPeerList();
+    O("Size peer list: " << peer_list.size());
     
     if (peer_list.size()>0){
       std::vector<boost::asio::ip::udp::endpoint>::iterator it;
       for (it = peer_list.begin(); it != peer_list.end(); ++it) {
 	// _SET_COLOR(_BLUE);
-	LOG("Peer: " << *it);
+	O("Peer: " << *it);
 	// _SET_COLOR(_RED);
 	
-	LOG(splitter.GetLoss(*it)
+	O(splitter.GetLoss(*it)
 	    << "/"
 	    << chunks_sendto
 	    << " "
@@ -294,9 +359,9 @@ int main(int argc, const char *argv[]) {
 	
 	/*if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
 	// _SET_COLOR(_YELLOW);
-	LOG(splitter_acs->GetPeriod(*it));
+	O(splitter_acs->GetPeriod(*it));
 	// _SET_COLOR(_PURPLE)
-	LOG((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
+	O((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
 	splitter_acs->GetChunkSize() * 8) /
 	1000);
 	splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
@@ -306,7 +371,7 @@ int main(int argc, const char *argv[]) {
 #endif     
   }
 
-  LOG("Ending");
+  O("Ending");
   HandlerEndOfExecution();
 
   return 0;

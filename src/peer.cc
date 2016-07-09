@@ -650,15 +650,15 @@ namespace p2psp {
     console.Start();
     TRACE("Peer running in a thread");
     
-    LOG("+-----------------------------------------------------+");
-    LOG("| Received = Received kbps, including retransmissions |");
-    LOG("|     Sent = Sent kbps                                |");
-    LOG("|       (Expected values are between parenthesis)     |");
-    LOG("------------------------------------------------------+");
-    LOG("");
-    LOG("         |     Received (kbps) |          Sent (kbps) |");
-    LOG("    Time |      Real  Expected |       Real  Expected | Team description");
-    LOG("---------+---------------------+----------------------+-----------------------------------...");
+    O("+-----------------------------------------------------+");
+    O("| Received = Received kbps, including retransmissions |");
+    O("|     Sent = Sent kbps                                |");
+    O("|       (Expected values are between parenthesis)     |");
+    O("------------------------------------------------------+");
+    O("");
+    O("         |     Received (kbps) |          Sent (kbps) |");
+    O("    Time |      Real  Expected |       Real  Expected | Team description");
+    O("---------+---------------------+----------------------+-----------------------------------...");
 
     int last_chunk_number = console.GetPlayedChunk();
     float kbps_expected_recv = 0.0f;
@@ -700,12 +700,12 @@ namespace p2psp {
       } else {
         // nice = 0.0f;
       }
-      LOG("|");
+      O("|");
 
       if (kbps_expected_recv < kbps_recvfrom) {
-        LOG(_SET_COLOR(_RED));
+        O(_SET_COLOR(_RED));
       } else if (kbps_expected_recv > kbps_recvfrom) {
-        LOG(_SET_COLOR(_GREEN));
+        O(_SET_COLOR(_GREEN));
       }
 #endif
 
@@ -713,26 +713,26 @@ namespace p2psp {
       boost::format format("Defaut = %5i");
       
       // TODO: format
-      LOG(kbps_expected_recv);
-      LOG(kbps_recvfrom);
+      O(kbps_expected_recv);
+      O(kbps_recvfrom);
       //#print(("{:.1f}".format(nice)).rjust(6), end=' | ')
       //#sys.stdout.write(Color.none)
 #ifndef __IMS__
       if (kbps_expected_sent > kbps_sendto) {
-        LOG(_SET_COLOR(_RED));
+        O(_SET_COLOR(_RED));
       } else if (kbps_expected_sent < kbps_sendto) {
-        LOG(_SET_COLOR(_GREEN));
+        O(_SET_COLOR(_GREEN));
       }
       // TODO: format
-      LOG(kbps_sendto);
-      LOG(kbps_expected_sent);
+      O(kbps_sendto);
+      O(kbps_expected_sent);
       // sys.stdout.write(Color.none)
       // print(repr(nice).ljust(1)[:6], end=' ')
-      LOG(console.GetPeerList()->size());
+      O(console.GetPeerList()->size());
       counter = 0;
       for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = console.GetPeerList()->begin(); p != console.GetPeerList()->end(); ++p) {
         if (counter < 5) {
-          LOG("("
+          O("("
 	      << p->address().to_string()
 	      << ","
 	      << std::to_string(p->port())
@@ -740,7 +740,7 @@ namespace p2psp {
           counter++;
         } else {
           break;
-          LOG("");
+          O("");
         }
       }
 #endif
