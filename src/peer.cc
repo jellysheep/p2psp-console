@@ -45,15 +45,15 @@ namespace p2psp {
 
     struct Source {
       ip::address addr;
-      PORT port;
+      PORT_TYPE port;
     };
     
-    PORT player_port_;
+    PORT_TYPE player_port_;
     io_service io_service_;
     ip::tcp::acceptor acceptor_;
     ip::tcp::socket source_socket_;
     ip::tcp::socket player_socket_;
-    HEADER_SIZE header_size_;
+    HEADER_SIZE_TYPE header_size_;
     struct Source source;
     std::string GET_message_;
     std::string channel_;
@@ -105,7 +105,7 @@ namespace p2psp {
       // }}}
     }
     
-    PORT GetSourcePort() {
+    PORT_TYPE GetSourcePort() {
       // {{{
       
       return source.port;
@@ -132,7 +132,27 @@ namespace p2psp {
     void ReceiveChannel() {
       // {{{
 
-      splitter_socket_.receive(boost::asio::buffer(channel_));
+      unsigned short channel_size; {
+	std::vector<char> message(2);
+	read(splitter_socket_, boost::asio::buffer(message/*,2*/));
+	channel_size = ntohs(*(short *)(message.data()));
+      }
+      
+      TRACE("channel_size = "
+	    << channel_size);
+
+      {
+	std::vector<char> messagex(channel_size);
+	boost::asio::read(splitter_socket_, boost::asio::buffer(messagex/*, channel_size*/));
+	for(int i=0; i<channel_size; i++) {
+	  cout << i << ' ' << messagex[i] << '\n';
+      }
+      
+	channel_ = std::string(messagex.data(), channel_size);
+      }
+      //channel_ = "BBB-143.ogv";
+      TRACE("length = "
+	    << channel_.length());
       TRACE("channel = "
 	    << channel_);
       SetGETMessage();
@@ -203,7 +223,7 @@ namespace p2psp {
       // }}}
       }*/
 
-    HEADER_SIZE GetHeaderSize() {
+    HEADER_SIZE_TYPE GetHeaderSize() {
       // {{{
       
       return header_size_;
@@ -351,6 +371,7 @@ namespace p2psp {
   };
 
   int run(int argc, const char* argv[]) throw(boost::system::system_error) {
+    // {{{
 
     // {{{ Argument Parsing
 
@@ -455,18 +476,26 @@ namespace p2psp {
     class Console console;
     
     if (vm.count("player_port")) {
+      // {{{
+
       console.SetPlayerPort(vm["player_port"].as<uint16_t>());
       TRACE("Player port = "
 	    << console.GetPlayerPort());
+
+      // }}}
     }
 
     console.WaitForThePlayer();
     TRACE("Player connected");
 
     if (vm.count("splitter_addr")) {
+      // {{{
+
       console.SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
       TRACE("Splitter address = "
 	    << console.GetSplitterAddr());
+
+      // }}}
     }
 
     if (vm.count("splitter_port")) {
@@ -496,20 +525,9 @@ namespace p2psp {
     TRACE("channel = "
 	  << console.GetChannel());
     
-    /*if (vm.count("channel")) {
-      console.SetChannel(vm["channel"].as<std::string>());
-      TRACE("Channel = "
-	    << console.GetChannel());
-	    }*/
-
     console.ReceiveHeaderSize();
     TRACE("Header size = "
 	    << console.GetHeaderSize());
-        /*if (vm.count("header_size")) {
-      console.SetHeaderSize(vm["header_size"].as<int>());
-      TRACE("Header size = "
-	    << console.GetHeaderSize());
-	    }*/
 
     console.RequestHeader();
     TRACE("Header requested");
@@ -527,6 +545,8 @@ namespace p2psp {
 
 #if defined __IMS__
 
+    // {{{
+
     TRACE("Using IMS");
     
     console.ReceiveMcastGroup();
@@ -536,7 +556,11 @@ namespace p2psp {
 	  << console.GetMcastPort()
 	  << ")");
 
+    // }}}
+
 #elif defined _DBS_
+
+    // {{{
 
     TRACE("Using DBS");
 
@@ -570,7 +594,11 @@ namespace p2psp {
       // }}}
     }
 
+    // }}}
+
 #eise if defined _NTS_
+
+    // {{{
 
     TRACE("Using NTS");
 
@@ -579,6 +607,8 @@ namespace p2psp {
     }
     TRACE("Source port step ="
 	  << Console.GetPortStep());
+
+    // }}}
     
 #endif
     
@@ -586,10 +616,16 @@ namespace p2psp {
 
 #if defined __IMS__
     
+    // {{{
+
     console.ListenToTheTeam();
+
+    // }}}
 
 #else
     
+    // {{{
+
     console.ListenToTheTeam();
     TRACE("Listening to the team");
     
@@ -598,6 +634,8 @@ namespace p2psp {
     TRACE("List of peers received");
     TRACE("Number of peers in the team (excluding me) ="
 	  << std::to_string(console.GetNumberOfPeers()));
+
+    // }}}
 
 #endif    
 
@@ -711,8 +749,9 @@ namespace p2psp {
 
     return 0;
   }
-}
 
+    // }}}
+}
 
 int main(int argc, const char* argv[]) {
   //try {
@@ -722,4 +761,5 @@ int main(int argc, const char* argv[]) {
     //}
 
   return -1;
+
 }

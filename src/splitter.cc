@@ -89,7 +89,7 @@ int main(int argc, const char *argv[]) {
     int splitter_port = splitter.GetDefaultSplitterPort();
     std::string source_addr = splitter.GetDefaultSourceAddr();
     int source_port = splitter.GetDefaultSourcePort();
-    int header_length = splitter.GetDefaultHeaderLength();
+    int header_size = splitter.GetDefaultHeaderSize();
 #if defined __IMS__
     std::string mcast_addr = splitter.GetDefaultMcastAddr();
     unsigned short mcast_port = splitter.GetDefaultMcastPort();
@@ -105,7 +105,7 @@ int main(int argc, const char *argv[]) {
       ("buffer_size", boost::program_options::value<int>()->default_value(buffer_size), "Length of the buffer in chunks.")
       ("channel", boost::program_options::value<std::string>()->default_value(channel), "Name of the channel served by the streaming source.")
       ("chunk_size", boost::program_options::value<int>()->default_value(chunk_size), "Chunk size in bytes.")
-      ("header_length", boost::program_options::value<int>()->default_value(header_length), "Size of the header of the stream in bytes.")
+      ("header_size", boost::program_options::value<int>()->default_value(header_size), "Length of the header of the stream in bytes.")
 #if defined __DBS__
       ("max_number_of_chunk_loss", boost::program_options::value<int>()->default_value(max_number_of_chunk_loss), "Maximum number of lost chunks for an unsupportive peer.")
       ("max_number_of_monitors", boost::program_options::value<int>()->default_value(max_number_of_monitors), "Maximum number of monitors in the team. The first connecting peers will automatically become monitors.")
@@ -179,6 +179,12 @@ int main(int argc, const char *argv[]) {
     splitter.SetChunkSize(vm["chunk_size"].as<int>());
     TRACE("Chunk size = "
 	  << splitter.GetChunkSize());
+  }
+
+  if (vm.count("header_size")) {
+    splitter.SetHeaderSize(vm["header_size"].as<int>());
+    TRACE("Header size = "
+	  << splitter.GetHeaderSize());
   }
 
 #if defined __IMS__
