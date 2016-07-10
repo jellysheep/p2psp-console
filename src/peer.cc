@@ -16,7 +16,7 @@
 
 // {{{ includes
 
-#include <boost/format.hpp>
+//#include <boost/format.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include "common.h"
@@ -646,23 +646,32 @@ namespace p2psp {
 
     console.Start();
     TRACE("Peer running in a thread");
-    
+
+#if defined __IMS__
+  std::cout << "                     |  Received |      Sent |" << std::endl;
+  std::cout << "                Time |    (kbps) |    (kbps) |" << std::endl;
+  std::cout << "---------------------+-----------+-----------+" << std::endl;
+#else
     std::cout << "+-----------------------------------------------------+" << std::endl;
     std::cout << "| Received = Received kbps, including retransmissions |" << std::endl;
     std::cout << "|     Sent = Sent kbps                                |" << std::endl;
     std::cout << "|       (Expected values are between parenthesis)     |" << std::endl;
     std::cout << "------------------------------------------------------+" << std::endl;
-    O("");
+    std::cout << std::endl;
     O("         |     Received (kbps) |          Sent (kbps) |");
     O("    Time |      Real  Expected |       Real  Expected | Team description");
     O("---------+---------------------+----------------------+-----------------------------------...");
-
+#endif
+    
+    //float kbps_recvfrom = 0.0f;
+    //float kbps_sendto = 0.0f;
+    int kbps_recvfrom = 0;
+    int kbps_sendto = 0;
+    int last_sendto_counter = -1;
+    int last_recvfrom_counter = console.GetRecvfromCounter();
+#if not defined __IMS__
     int last_chunk_number = console.GetPlayedChunk();
     float kbps_expected_recv = 0.0f;
-    float kbps_recvfrom = 0.0f;
-#if not defined __IMS__
-    int last_recvfrom_counter = console.GetRecvfromCounter();
-    int last_sendto_counter = -1;
     if (console.GetSendtoCounter() < 0) {
       last_sendto_counter = 0;
     } else {
@@ -671,86 +680,101 @@ namespace p2psp {
     }
     float team_ratio = 0.0f;
     float kbps_expected_sent = 0.0f;
-    float kbps_sendto = 0.0f;
     // float nice = 0.0f;
     int counter = 0;
 #endif
 
     while (console.IsPlayerAlive()) {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
-      kbps_expected_recv = ((console.GetPlayedChunk() - last_chunk_number) *
-                            console.GetChunkSize() * 8) / 1000.0f;
-      last_chunk_number = console.GetPlayedChunk();
-#if not defined __IMS__
-      kbps_recvfrom = ((console.GetRecvfromCounter() - last_recvfrom_counter) *
-                       console.GetChunkSize() * 8) / 1000.0f;
-      last_recvfrom_counter = console.GetRecvfromCounter();
-      team_ratio = console.GetPeerList()->size() / (console.GetPeerList()->size() + 1.0f);
-      kbps_expected_sent = (int)(kbps_expected_recv * team_ratio);
-      kbps_sendto = ((console.GetSendtoCounter() - last_sendto_counter) *
-                     console.GetChunkSize() * 8) / 1000.0f;
-      last_sendto_counter = console.GetSendtoCounter();
 
-      if (kbps_recvfrom > 0 and kbps_expected_recv > 0) {
-        // nice = 100.0 / (kbps_expected_recv / kbps_recvfrom) *
-        // (console.GetPeerList()->size() + 1.0f);
-      } else {
-        // nice = 0.0f;
-      }
-      O("|");
-
-      if (kbps_expected_recv < kbps_recvfrom) {
-        O(_SET_COLOR(_RED));
-      } else if (kbps_expected_recv > kbps_recvfrom) {
-        O(_SET_COLOR(_GREEN));
-      }
-#endif
-
-      // TODO: Format default options
-      boost::format format("Defaut = %5i");
-      
-      // TODO: format
-      O(kbps_expected_recv);
-      O(kbps_recvfrom);
-      //#print(("{:.1f}".format(nice)).rjust(6), end=' | ')
-      //#sys.stdout.write(Color.none)
-#ifndef __IMS__
-      if (kbps_expected_sent > kbps_sendto) {
-        O(_SET_COLOR(_RED));
-      } else if (kbps_expected_sent < kbps_sendto) {
-        O(_SET_COLOR(_GREEN));
-      }
-      // TODO: format
-      O(kbps_sendto);
-      O(kbps_expected_sent);
-      // sys.stdout.write(Color.none)
-      // print(repr(nice).ljust(1)[:6], end=' ')
-      O(console.GetPeerList()->size());
-      counter = 0;
-      for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = console.GetPeerList()->begin(); p != console.GetPeerList()->end(); ++p) {
-        if (counter < 5) {
-          O("("
-	      << p->address().to_string()
-	      << ","
-	      << std::to_string(p->port())
-              << ")");
-          counter++;
-        } else {
-          break;
-          O("");
-        }
-      }
-#endif
-
+    { /* Print current time */
+      using boost::posix_time::ptime;
+      using boost::posix_time::second_clock;
+      using boost::posix_time::to_simple_string;
+      using boost::gregorian::day_clock;
+      ptime todayUtc(day_clock::universal_day(), second_clock::universal_time().time_of_day());
+      std::cout << to_simple_string(todayUtc);
     }
 
+    kbps_sendto = int(((console.GetSendtoCounter() - last_sendto_counter) *
+		       console.GetChunkSize() * 8) / 1000.0f);
+    last_sendto_counter = console.GetSendtoCounter();
+    kbps_recvfrom = int(((console.GetRecvfromCounter() - last_recvfrom_counter) *
+			 console.GetChunkSize() * 8) / 1000.0f);
+    last_recvfrom_counter = console.GetRecvfromCounter();
+#if not defined __IMS__
+    kbps_expected_recv = ((console.GetPlayedChunk() - last_chunk_number) *
+			  console.GetChunkSize() * 8) / 1000.0f;
+    last_chunk_number = console.GetPlayedChunk();
+    team_ratio = console.GetPeerList()->size() / (console.GetPeerList()->size() + 1.0f);
+    kbps_expected_sent = (int)(kbps_expected_recv * team_ratio);
+    
+    if (kbps_recvfrom > 0 and kbps_expected_recv > 0) {
+      // nice = 100.0 / (kbps_expected_recv / kbps_recvfrom) *
+      // (console.GetPeerList()->size() + 1.0f);
+    } else {
+      // nice = 0.0f;
+    }
+    O("|");
+    
+    if (kbps_expected_recv < kbps_recvfrom) {
+      O(_SET_COLOR(_RED));
+    } else if (kbps_expected_recv > kbps_recvfrom) {
+      O(_SET_COLOR(_GREEN));
+    }
+#endif
+    
+    std::cout << " |";
+    std::cout << std::setw(10) << kbps_recvfrom;
+    std::cout << " |";
+    std::cout << std::setw(10) << kbps_sendto;
+    std::cout << " |" << std::endl;
+    
+    // TODO: Format default options
+    //boost::format format("Defaut = %5i");
+    
+    // TODO: format
+    //O(kbps_expected_recv);
+    //O(kbps_recvfrom);
+    //#print(("{:.1f}".format(nice)).rjust(6), end=' | ')
+    //#sys.stdout.write(Color.none)
+#ifndef __IMS__
+    if (kbps_expected_sent > kbps_sendto) {
+      O(_SET_COLOR(_RED));
+    } else if (kbps_expected_sent < kbps_sendto) {
+      O(_SET_COLOR(_GREEN));
+    }
+    // TODO: format
+    O(kbps_sendto);
+    O(kbps_expected_sent);
+    // sys.stdout.write(Color.none)
+    // print(repr(nice).ljust(1)[:6], end=' ')
+    O(console.GetPeerList()->size());
+    counter = 0;
+    for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = console.GetPeerList()->begin(); p != console.GetPeerList()->end(); ++p) {
+      if (counter < 5) {
+	O("("
+	  << p->address().to_string()
+	  << ","
+	  << std::to_string(p->port())
+	  << ")");
+	counter++;
+      } else {
+	break;
+	O("");
+      }
+    }
+#endif
+    
+    }
+    
     return 0;
   }
-
+    
     // }}}
-}
+  }
 
-int main(int argc, const char* argv[]) {
+    int main(int argc, const char* argv[]) {
   //try {
     return p2psp::run(argc, argv);
     //} catch (boost::system::system_error e) {

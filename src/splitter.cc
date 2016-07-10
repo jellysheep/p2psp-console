@@ -327,8 +327,9 @@ int main(int argc, const char *argv[]) {
 
   while (splitter.isAlive()) {
     
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+
     { /* Print current time */
-      boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
       using boost::posix_time::ptime;
       using boost::posix_time::second_clock;
       using boost::posix_time::to_simple_string;
