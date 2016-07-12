@@ -103,7 +103,7 @@ int main(int argc, const char *argv[]) {
     int TTL = splitter.GetDefaultTTL();
 #elif defined __DBS__
     int max_number_of_chunk_loss = splitter.GetDefaultMaxNumberOfChunkLoss();
-    int max_number_of_monitors = splitterGetDefaultMaxNumberOfMonitors();
+    int monitors_number = splitter.GetDefaultMonitorsNumber();
 #endif
 
     // TODO: strpe option should expect a list of arguments, not bool
@@ -115,7 +115,7 @@ int main(int argc, const char *argv[]) {
       ("header_size", boost::program_options::value<int>()->default_value(header_size), "Length of the header of the stream in bytes.")
 #if defined __DBS__
       ("max_number_of_chunk_loss", boost::program_options::value<int>()->default_value(max_number_of_chunk_loss), "Maximum number of lost chunks for an unsupportive peer.")
-      ("max_number_of_monitors", boost::program_options::value<int>()->default_value(max_number_of_monitors), "Maximum number of monitors in the team. The first connecting peers will automatically become monitors.")
+      ("monitors_number", boost::program_options::value<int>()->default_value(monitors_number), "Number of monitors in the team. The first connecting peers will automatically become monitors.")
 #endif
 #if defined __IMS__
       ("mcast_addr",boost::program_options::value<std::string>()->default_value(mcast_addr), "IP multicast address used to broadcast the chunks.")
@@ -284,9 +284,9 @@ int main(int argc, const char *argv[]) {
   if (vm.count("max_number_of_monitors")) {
     // {{{
 
-    splitter.SetMaxNumberOfMonitors(vm["max_number_of_monitors"].as<int>());
-    TRACE("Maximun number of monitors = "
-	  << splitter.GetMaxNumberOfMonitors());
+    splitter.SetMonitorsNumber(vm["monitors_number"].as<int>());
+    TRACE("Number of monitors = "
+	  << splitter.GetMonitorsNumber());
 
     // }}}
   }
@@ -297,14 +297,16 @@ int main(int argc, const char *argv[]) {
 
   splitter.Start();
 
+  std::cout << _RESET_COLOR();
+  
 #if defined __IMS__
-  std::cout << "                     |  Received |      Sent |" << std::endl;
-  std::cout << "                Time |    (kbps) |    (kbps) |" << std::endl;
-  std::cout << "---------------------+-----------+-----------+" << std::endl;
+  std::cout << "                     | Received |     Sent |" << std::endl;
+  std::cout << "                Time |   (kbps) |   (kbps) |" << std::endl;
+  std::cout << "---------------------+----------+----------+" << std::endl;
 #else
-  O("         | Received  | Sent      | Number       losses/ losses");
-  O("    Time | (kbps)    | (kbps)    | peers (peer) sents   threshold period kbps");
-  O("---------+-----------+-----------+-----------------------------------...");
+  std::cout << "                     | Received |     Sent | Team | Team description" << std::endl;
+  std::cout << "                Time |   (kbps) |   (kbps) | size | (peer sent/lost)" << std::endl;
+  std::cout << "---------------------+----------+----------+------+------------------..." << std::endl;
 #endif
   
   int last_sendto_counter = splitter.GetSendToCounter();
@@ -345,44 +347,56 @@ int main(int argc, const char *argv[]) {
     last_sendto_counter = splitter.GetSendToCounter();
     last_recvfrom_counter = splitter.GetRecvFromCounter();
     std::cout << " |";
-    std::cout << std::setw(10) << kbps_recvfrom;
+    std::cout << std::setw(9) << kbps_recvfrom;
     std::cout << " |";
-    std::cout << std::setw(10) << kbps_sendto;
-    std::cout << " |" << std::endl;
+    std::cout << std::setw(9) << kbps_sendto;
+    std::cout << " |";
 
     // O(_SET_COLOR(_CYAN));
 #if defined __DBS__
     peer_list = splitter.GetPeerList();
-    O("Size peer list: " << peer_list.size());
+    //O("Size peer list: " << peer_list.size());
     
-    if (peer_list.size()>0){
-      std::vector<boost::asio::ip::udp::endpoint>::iterator it;
-      for (it = peer_list.begin(); it != peer_list.end(); ++it) {
-	// _SET_COLOR(_BLUE);
-	O("Peer: " << *it);
-	// _SET_COLOR(_RED);
+    std::cout
+      << std::setw(5)
+      << peer_list.size()
+      << " |";
 	
-	O(splitter.GetLoss(*it)
-	    << "/"
-	    << chunks_sendto
-	    << " "
-	    << splitter.GetMaxNumberOfChunkLoss());
-	
-	/*if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
-	// _SET_COLOR(_YELLOW);
-	O(splitter_acs->GetPeriod(*it));
-	// _SET_COLOR(_PURPLE)
-	O((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
-	splitter_acs->GetChunkSize() * 8) /
-	1000);
-	splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
-	}*/
-      }
+    std::vector<boost::asio::ip::udp::endpoint>::iterator it;
+    for (it = peer_list.begin(); it != peer_list.end(); ++it) {
+      
+      std::cout
+	//<< _SET_COLOR(_BLUE)
+      	<< ' ' << *it ;
+
+      int gs = splitter.GetLoss(*it);
+      if (gs>0) 
+	std::cout
+	  << _SET_COLOR(_RED);
+      std::cout
+	<< ' '
+	<< splitter.GetLoss(*it)
+	<< "/"
+	<< chunks_sendto
+	<< _RESET_COLOR();
+      
+      /*if (splitter_dbs->GetMagicFlags() >= p2psp::Common::kACS) { // If is ACS
+      // _SET_COLOR(_YELLOW);
+      O(splitter_acs->GetPeriod(*it));
+      // _SET_COLOR(_PURPLE)
+      O((splitter_acs->GetNumberOfSentChunksPerPeer(*it) *
+      splitter_acs->GetChunkSize() * 8) /
+      1000);
+      splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
+      }*/
     }
+
+    std::cout << std::endl;
+    
 #endif     
   }
 
-  O("Ending");
+  std::cout << "Ending ..." << std::endl;
   HandlerEndOfExecution();
 
   return 0;

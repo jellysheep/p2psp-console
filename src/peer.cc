@@ -471,6 +471,7 @@ namespace p2psp {
     // }}}
 
     class Console console;
+    //std::unique_ptr<p2psp::PeerDBS> peer;
     
     if (vm.count("player_port")) {
       // {{{
@@ -647,20 +648,26 @@ namespace p2psp {
     console.Start();
     TRACE("Peer running in a thread");
 
+    std::cout << _RESET_COLOR();
+
 #if defined __IMS__
-  std::cout << "                     |  Received |      Sent |" << std::endl;
-  std::cout << "                Time |    (kbps) |    (kbps) |" << std::endl;
-  std::cout << "---------------------+-----------+-----------+" << std::endl;
+    
+    std::cout << "                     | Received |     Sent |" << std::endl;
+    std::cout << "                Time |   (kbps) |   (kbps) |" << std::endl;
+    std::cout << "---------------------+----------+----------+" << std::endl;
+
 #else
-    std::cout << "+-----------------------------------------------------+" << std::endl;
+
+    /*std::cout << "+-----------------------------------------------------+" << std::endl;
     std::cout << "| Received = Received kbps, including retransmissions |" << std::endl;
     std::cout << "|     Sent = Sent kbps                                |" << std::endl;
     std::cout << "|       (Expected values are between parenthesis)     |" << std::endl;
-    std::cout << "------------------------------------------------------+" << std::endl;
+    std::cout << "------------------------------------------------------+" << std::endl;*/
     std::cout << std::endl;
-    O("         |     Received (kbps) |          Sent (kbps) |");
-    O("    Time |      Real  Expected |       Real  Expected | Team description");
-    O("---------+---------------------+----------------------+-----------------------------------...");
+    std::cout << "                     | Received Expected |     Sent Expected | Team description" << std::endl;
+    std::cout << "                Time |   (kbps)   (kbps) |   (kbps)   (kbps) | " << std::endl;
+    std::cout << "---------------------+-------------------+-------------------+-----------------..." << std::endl;
+
 #endif
     
     //float kbps_recvfrom = 0.0f;
@@ -669,9 +676,12 @@ namespace p2psp {
     int kbps_sendto = 0;
     int last_sendto_counter = -1;
     int last_recvfrom_counter = console.GetRecvfromCounter();
+    
 #if not defined __IMS__
+
     int last_chunk_number = console.GetPlayedChunk();
-    float kbps_expected_recv = 0.0f;
+    //float kbps_expected_recv = 0.0f;
+    int kbps_expected_recv = 0;
     if (console.GetSendtoCounter() < 0) {
       last_sendto_counter = 0;
     } else {
@@ -679,9 +689,12 @@ namespace p2psp {
       last_sendto_counter = 0;
     }
     float team_ratio = 0.0f;
-    float kbps_expected_sent = 0.0f;
+    //int team_ratio = 0f;
+    //float kbps_expected_sent = 0.0f;
+    int kbps_expected_sent = 0;
     // float nice = 0.0f;
     int counter = 0;
+
 #endif
 
     while (console.IsPlayerAlive()) {
@@ -702,32 +715,60 @@ namespace p2psp {
     kbps_recvfrom = int(((console.GetRecvfromCounter() - last_recvfrom_counter) *
 			 console.GetChunkSize() * 8) / 1000.0f);
     last_recvfrom_counter = console.GetRecvfromCounter();
+
 #if not defined __IMS__
-    kbps_expected_recv = ((console.GetPlayedChunk() - last_chunk_number) *
-			  console.GetChunkSize() * 8) / 1000.0f;
+
+    kbps_expected_recv = int(((console.GetPlayedChunk() - last_chunk_number) *
+			      console.GetChunkSize() * 8) / 1000.0f);
     last_chunk_number = console.GetPlayedChunk();
     team_ratio = console.GetPeerList()->size() / (console.GetPeerList()->size() + 1.0f);
     kbps_expected_sent = (int)(kbps_expected_recv * team_ratio);
-    
+
+    /*
     if (kbps_recvfrom > 0 and kbps_expected_recv > 0) {
       // nice = 100.0 / (kbps_expected_recv / kbps_recvfrom) *
       // (console.GetPeerList()->size() + 1.0f);
     } else {
       // nice = 0.0f;
-    }
-    O("|");
+      }*/
+    std::cout << " |";
     
-    if (kbps_expected_recv < kbps_recvfrom) {
-      O(_SET_COLOR(_RED));
-    } else if (kbps_expected_recv > kbps_recvfrom) {
-      O(_SET_COLOR(_GREEN));
-    }
-#endif
+#endif /* not defined __IMS__ */
     
     std::cout << " |";
     std::cout << std::setw(10) << kbps_recvfrom;
+
+#if not defined __IMS__
+    
+    if (kbps_expected_recv < kbps_recvfrom) {
+      std::cout <<_SET_COLOR(_RED);
+    } else if (kbps_expected_recv > kbps_recvfrom) {
+      std::cout << _SET_COLOR(_GREEN);
+    }
+
+    std::cout
+      << std::setw(10)
+      << kbps_expected_recv;
+
+#endif /* not defined __IMS__ */
+    
     std::cout << " |";
     std::cout << std::setw(10) << kbps_sendto;
+
+#if not defined __IMS__
+    
+    if (kbps_expected_sent < kbps_sendto) {
+      std::cout <<_SET_COLOR(_RED);
+    } else if (kbps_expected_sent > kbps_sendto) {
+      std::cout << _SET_COLOR(_GREEN);
+    }
+
+    std::cout
+      << std::setw(10)
+      << kbps_expected_sent;
+
+#endif /* not defined __IMS__ */
+    
     std::cout << " |" << std::endl;
     
     // TODO: Format default options
@@ -739,29 +780,33 @@ namespace p2psp {
     //#print(("{:.1f}".format(nice)).rjust(6), end=' | ')
     //#sys.stdout.write(Color.none)
 #ifndef __IMS__
+
     if (kbps_expected_sent > kbps_sendto) {
-      O(_SET_COLOR(_RED));
+      std::cout << _SET_COLOR(_RED);
     } else if (kbps_expected_sent < kbps_sendto) {
-      O(_SET_COLOR(_GREEN));
+      std::cout << _SET_COLOR(_GREEN);
     }
+
     // TODO: format
-    O(kbps_sendto);
-    O(kbps_expected_sent);
+    std::cout << kbps_sendto;
+    std::cout << kbps_expected_sent;
     // sys.stdout.write(Color.none)
     // print(repr(nice).ljust(1)[:6], end=' ')
-    O(console.GetPeerList()->size());
+    std::cout << console.GetPeerList()->size();
     counter = 0;
-    for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = console.GetPeerList()->begin(); p != console.GetPeerList()->end(); ++p) {
+    for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = console.GetPeerList()->begin();
+	 p != console.GetPeerList()->end();
+	 ++p) {
       if (counter < 5) {
-	O("("
-	  << p->address().to_string()
-	  << ","
-	  << std::to_string(p->port())
-	  << ")");
+	std::cout << "("
+		  << p->address().to_string()
+		  << ","
+		  << std::to_string(p->port())
+		  << ")";
 	counter++;
       } else {
 	break;
-	O("");
+	std::cout << "";
       }
     }
 #endif
