@@ -5,6 +5,7 @@
 //  THE_GENERAL_GNU_PUBLIC_LICENSE.txt for extending this information).
 //
 //  Copyright (C) 2016, the P2PSP team.
+//
 //  http://www.p2psp.org
 //
 //  This program waits for the connection of the player, retrieves the
@@ -15,13 +16,16 @@
 
 // {{{ includes
 
-#include <boost/format.hpp>
+//#include <boost/format.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include "common.h"
 #include "core/common.h"
-#include "core/peer_dbs.cc"
-#include "core/peer_ims.cc"
+#if defined __IMS__
+#include "core/peer_ims.h"
+#elif defined __DBS__
+#include "core/peer_dbs.h"
+#endif
 #include "util/trace.h"
 
 // }}}
@@ -41,15 +45,15 @@ namespace p2psp {
 
     struct Source {
       ip::address addr;
-      uint16_t port;
+      PORT_TYPE port;
     };
     
-    uint16_t player_port_;
+    PORT_TYPE player_port_;
     io_service io_service_;
     ip::tcp::acceptor acceptor_;
     ip::tcp::socket source_socket_;
     ip::tcp::socket player_socket_;
-    int header_length_;
+    HEADER_SIZE_TYPE header_size_;
     struct Source source;
     std::string GET_message_;
     std::string channel_;
@@ -60,20 +64,97 @@ namespace p2psp {
 	       acceptor_(io_service_),
 	       source_socket_(io_service_),
 	       player_socket_(io_service_) {
-      header_length_ = GetDefaultHeaderSize();
-      channel_ = GetDefaultChannel();
-      SetGETMessage(channel_);
+      // {{{
+
+      //header_size_ = GetDefaultHeaderSize();
+      //channel_ = GetDefaultChannel();
+      //SetGETMessage(channel_);
       TRACE("Console initialized");
+
+      // }}}
     }
 
     ~Console() {}
-    
-    static std::string GetDefaultChannel() {
-      return "BBB-143.ogv";
+
+    void ReceiveSourceEndpoint() {
+      // {{{
+
+      boost::array<char, 6> buffer;
+      read(splitter_socket_, ::buffer(buffer));
+      
+      char *raw_data = buffer.data();
+      
+      in_addr ip_raw = *(in_addr *)(raw_data);
+      source.addr = ip::address::from_string(inet_ntoa(ip_raw));
+      source.port = ntohs(*(short *)(raw_data + 4));
+      
+      TRACE("source_endpoint = ("
+	    << source.addr.to_string()
+	    << ","
+	    << std::to_string(source.port)
+	    << ")");
+
+      // }}}
     }
 
-    static int GetDefaultHeaderSize() {
-      return 8192;
+    ip::address GetSourceAddr() {
+      // {{{
+      
+      return source.addr;
+
+      // }}}
+    }
+    
+    PORT_TYPE GetSourcePort() {
+      // {{{
+      
+      return source.port;
+
+      // }}}
+    }
+
+    void SetGETMessage() {
+      // {{{
+
+      std::stringstream ss;
+      ss << "GET /" << channel_ << " HTTP/1.1\r\n"
+	 << "\r\n";
+      GET_message_ = ss.str();
+
+      TRACE("GET_message = "
+	    << GET_message_);
+
+      ss.str("");
+
+      // }}}
+    }
+
+    void ReceiveChannel() {
+      // {{{
+
+      unsigned short channel_size; {
+	std::vector<char> message(2);
+	read(splitter_socket_, boost::asio::buffer(message/*,2*/));
+	channel_size = ntohs(*(short *)(message.data()));
+      }
+      
+      TRACE("channel_size = "
+	    << channel_size);
+
+      {
+	std::vector<char> messagex(channel_size);
+	boost::asio::read(splitter_socket_, boost::asio::buffer(messagex/*, channel_size*/));
+      
+	channel_ = std::string(messagex.data(), channel_size);
+      }
+      //channel_ = "BBB-143.ogv";
+      TRACE("length = "
+	    << channel_.length());
+      TRACE("channel = "
+	    << channel_);
+      SetGETMessage();
+
+      // }}}
     }
 
     std::string GetChannel() {
@@ -84,78 +165,76 @@ namespace p2psp {
       // }}}
     }
 
-    void SetChannel(std::string channel) {
+    void ReceiveHeaderSize() {
+      // {{{
+
+      boost::array<char, 2> buffer;
+      read(splitter_socket_, ::buffer(buffer));
+      
+      header_size_ = ntohs(*(short *)(buffer.c_array()));
+      
+      TRACE("header_size (in bytes) = "
+	    << std::to_string(header_size_));
+
+      // }}}
+    }
+  
+    /*static std::string GetDefaultChannel() {
+      return "BBB-143.ogv";
+      }*/
+
+    /*static int GetDefaultHeaderSize() {
+      return 4096;
+      }*/
+
+    /*void SetChannel(std::string channel) {
       // {{{
 
       channel_ = channel;
       SetGETMessage(channel_);
 
       // }}}
-    }
+      }*/
 
-    void SetSourceAddr(ip::address addr) {
+    /*void SetSourceAddr(ip::address addr) {
       // {{{
 
       source.addr = addr;
 
       // }}}
-    }
+      }*/
 
-    ip::address GetSourceAddr() {
-      // {{{
-      
-      return source.addr;
-
-      // {{{
-    }
-    
-    static ip::address GetDefaultSourceAddr() {
+    /*static ip::address GetDefaultSourceAddr() {
       // {{{
 
       return ip::address::from_string("127.0.0.1");
 
       // }}}
-    }
+      }*/
 
-    void SetSourcePort(uint16_t port) {
+    /*void SetSourcePort(uint16_t port) {
       // {{{
 
       source.port = port;
 
       // }}}
-    }
+      }*/
 
-    uint16_t GetSourcePort() {
+    HEADER_SIZE_TYPE GetHeaderSize() {
       // {{{
       
-      return source.port;
+      return header_size_;
 
       // }}}
     }
     
-    uint16_t GetHeaderLength() {
-      // {{{
-      
-      return header_length_;
-
-      // }}}
-    }
-    
-    static uint16_t GetDefaultSourcePort() {
+    /*static uint16_t GetDefaultSourcePort() {
       // {{{
 
       return 8000;
 
       // }}}
-    }
-
-    void SetGETMessage(std::string channel) {
-      std::stringstream ss;
-      ss << "GET /" << channel << " HTTP/1.1\r\n"
-	 << "\r\n";
-      GET_message_ = ss.str();
-      ss.str("");
-    }
+      }*/
 
     void ConnectToTheSource() throw(boost::system::system_error) {
       // {{{
@@ -183,11 +262,11 @@ namespace p2psp {
 	    << ") from "
 	    << source_socket_.local_endpoint().address().to_string());
 
-      source_socket_.send(asio::buffer(GET_message_));
-
-      TRACE("GET_message = "
-	    << GET_message_);
       // }}}
+    }
+
+    void RequestHeader() {
+      source_socket_.send(asio::buffer(GET_message_));      
     }
     
     void RelayHeader() {
@@ -195,7 +274,7 @@ namespace p2psp {
             
       boost::array<char, 128> buf;
       //boost::system::error_code error;
-      for(int header_load_counter_ = 0; header_load_counter_ < GetHeaderLength();) {
+      for(int header_load_counter_ = 0; header_load_counter_ < GetHeaderSize();) {
 
 	//size_t len = socket.read_some(boost::asio::buffer(buf), error);
 	size_t len = source_socket_.read_some(boost::asio::buffer(buf));
@@ -238,21 +317,13 @@ namespace p2psp {
       // }}}
     }
 
-    void SetHeaderSize(int header_length) {
+    /*void SetHeaderSize(int header_size) {
       // {{{
 
-      this->header_length_ = header_length;
+      this->header_size_ = header_size;
 
       // }}}
-    }
-
-    int GetHeaderSize() {
-      // {{{
-      
-      return this->header_length_;
-      
-      // }}}
-    }
+      }*/
 
     bool PlayChunk(std::vector<char> chunk) {
       // {{{
@@ -297,6 +368,7 @@ namespace p2psp {
   };
 
   int run(int argc, const char* argv[]) throw(boost::system::system_error) {
+    // {{{
 
     // {{{ Argument Parsing
 
@@ -313,39 +385,43 @@ namespace p2psp {
     {
 
       uint16_t player_port = Console::GetDefaultPlayerPort();
-      std::string source_addr = Console::GetDefaultSourceAddr().to_string();
-      uint16_t source_port = Console::GetDefaultSourcePort();
+      //      std::string source_addr = Console::GetDefaultSourceAddr().to_string();
+      //      uint16_t source_port = Console::GetDefaultSourcePort();
       std::string splitter_addr = p2psp::Peer_core::GetDefaultSplitterAddr().to_string();
       uint16_t splitter_port = p2psp::Peer_core::GetDefaultSplitterPort();
-#ifdef __DBS__
+#if defined __DBS__
       int max_chunk_debt = p2psp::Peer_DBS::GetDefaultMaxChunkDebt();
-#endif
       uint16_t team_port = p2psp::Peer_core::GetDefaultTeamPort();
-#ifdef __NTS__
+#endif
+#if defined __NTS__
       int source_port_step = 0;
 #endif
-      std::string channel = Console::GetDefaultChannel();
-      int header_length = Console::GetDefaultHeaderSize();
+      //      std::string channel = Console::GetDefaultChannel();
+      //      int header_size = Console::GetDefaultHeaderSize();
 
       // TODO: strpe option should expect a list of arguments, not bool
       desc.add_options()
         ("help,h", "Produce this help message and exits.")
-	("channel", boost::program_options::value<std::string>()->default_value(channel), "Name of the channel served by the streaming source.")
+	//	("channel", boost::program_options::value<std::string>()->default_value(channel), "Name of the channel served by the streaming source.")
+#if defined __DBS__
         ("enable_chunk_loss", boost::program_options::value<std::string>(), "Forces a lost of chunks.")
-	("header_length", boost::program_options::value<int>()->default_value(header_length), "Size of the header of the stream in chunks.")
-#ifdef __DBS__
+#endif
+	//("header_size", boost::program_options::value<int>()->default_value(header_size), "Size of the header of the stream in chunks.")
+#if defined __DBS__
         ("max_chunk_debt", boost::program_options::value<int>()->default_value(max_chunk_debt), "Maximum number of times that other peer can not send a chunk to this peer.")
 #endif
         ("player_port", boost::program_options::value<uint16_t>()->default_value(player_port), "Port to communicate with the player.")
-#ifdef __NTS__
+#if defined __NTS__
         ("source_port_step", boost::program_options::value<int>()->default_value(source_port_step), "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
 #endif
-        ("source_addr", boost::program_options::value<std::string>()->default_value(source_addr), "IP address or hostname of the source.")
-        ("source_port", boost::program_options::value<uint16_t>()->default_value(source_port), "Listening port of the source.")
+        //("source_addr", boost::program_options::value<std::string>()->default_value(source_addr), "IP address or hostname of the source.")
+        //("source_port", boost::program_options::value<uint16_t>()->default_value(source_port), "Listening port of the source.")
         ("splitter_addr", boost::program_options::value<std::string>()->default_value(splitter_addr), "IP address or hostname of the splitter.")
         ("splitter_port", boost::program_options::value<uint16_t>()->default_value(splitter_port), "Listening port of the splitter.")
+#if not defined __IMS__
         ("team_port", boost::program_options::value<uint16_t>()->default_value(team_port), "Port to communicate with the peers. By default the OS will chose it.")
         ("use_localhost", "Forces the peer to use localhost instead of the IP of the adapter to connect to the splitter." "Notice that in this case, peers that run outside of the host will not be able to communicate with this peer.")
+#endif
         //"malicious",
         // boost::program_options::value<bool>()->implicit_value(true),
         //"Enables the malicious activity for peer.")(
@@ -368,7 +444,10 @@ namespace p2psp {
         // "strpeds", boost::program_options::value<bool>()->implicit_value(true),
         // "Enables STrPe-DS")(
         //("strpe_log", "Logging STrPe & STrPe-DS specific data to file.")
-        ("monitor", "The peer is a monitor");
+#if defined __DBS__
+        ("monitor", "The peer is a monitor")
+#endif
+	;
 
     }
 
@@ -392,54 +471,29 @@ namespace p2psp {
     // }}}
 
     class Console console;
+    //std::unique_ptr<p2psp::PeerDBS> peer;
     
-    if (vm.count("channel")) {
-      console.SetChannel(vm["channel"].as<std::string>());
-      TRACE("Channel = "
-	    << console.GetChannel());
-    }
-
     if (vm.count("player_port")) {
+      // {{{
+
       console.SetPlayerPort(vm["player_port"].as<uint16_t>());
       TRACE("Player port = "
 	    << console.GetPlayerPort());
-    }
 
-    if (vm.count("header_length")) {
-      console.SetHeaderSize(vm["header_length"].as<int>());
-      TRACE("Header size = "
-	    << console.GetHeaderSize());
+      // }}}
     }
 
     console.WaitForThePlayer();
     TRACE("Player connected");
 
-    if (vm.count("source_addr")) {
-      console.SetSourceAddr(ip::address::from_string(vm["source_addr"].as<std::string>()));
-      TRACE("Source address = "
-	    << console.GetSourceAddr());
-    }
-
-    if (vm.count("source_port")) {
-      // {{{
-      
-      console.SetSourcePort(vm["source_port"].as<uint16_t>());
-      TRACE("Source port = "
-	    << console.GetSourcePort());
-      
-      // }}}
-    }
-    
-    console.ConnectToTheSource();
-    TRACE("Connected to the source");
-
-    console.RelayHeader();
-    TRACE("Header relayed");
-
     if (vm.count("splitter_addr")) {
+      // {{{
+
       console.SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
       TRACE("Splitter address = "
-	    << console.GetSourceAddr());
+	    << console.GetSplitterAddr());
+
+      // }}}
     }
 
     if (vm.count("splitter_port")) {
@@ -455,7 +509,47 @@ namespace p2psp {
     console.ConnectToTheSplitter();
     TRACE("Connected to the splitter");
 
+    console.ReceiveSourceEndpoint();
+    TRACE("Source = ("
+	  << console.GetSourceAddr()
+	  << ","
+	  << std::to_string(console.GetSourcePort())
+	  << ")");
+
+    console.ConnectToTheSource();
+    TRACE("Connected to the source");
+
+    console.ReceiveChannel();
+    TRACE("channel = "
+	  << console.GetChannel());
+    
+    console.ReceiveHeaderSize();
+    TRACE("Header size = "
+	    << console.GetHeaderSize());
+
+    console.RequestHeader();
+    TRACE("Header requested");
+
+    std::cout
+      << "Relaying header ... ";
+    console.RelayHeader();
+    TRACE("Header relayed");
+    std::cout
+      << "done!"
+      << std::endl;
+    
+    console.ReceiveChunkSize();
+    TRACE("Chunk size = "
+	  << console.GetChunkSize());
+
+    console.ReceiveBufferSize();
+    TRACE("Buffer size = "
+	  << console.GetBufferSize());
+
 #if defined __IMS__
+
+    // {{{
+
     TRACE("Using IMS");
     
     console.ReceiveMcastGroup();
@@ -465,7 +559,11 @@ namespace p2psp {
 	  << console.GetMcastPort()
 	  << ")");
 
+    // }}}
+
 #elif defined _DBS_
+
+    // {{{
 
     TRACE("Using DBS");
 
@@ -499,7 +597,11 @@ namespace p2psp {
       // }}}
     }
 
+    // }}}
+
 #eise if defined _NTS_
+
+    // {{{
 
     TRACE("Using NTS");
 
@@ -508,61 +610,83 @@ namespace p2psp {
     }
     TRACE("Source port step ="
 	  << Console.GetPortStep());
+
+    // }}}
     
 #endif
-
-    console.ReceiveChunkSize();
-    TRACE("Chunk size = "
-	  << console.GetChunkSize());
-
-    console.ReceiveBufferSize();
-    TRACE("Buffer size = "
-	  << console.GetBufferSize());
     
     console.Init();
 
 #if defined __IMS__
-    console.ListenToTheTeam();
-#else
+    
     // {{{
+
+    console.ListenToTheTeam();
+
+    // }}}
+
+#else
     
-    console.ReceiveTheNumberOfPeers();
-    TRACE("Number of peers in the team (excluding me) ="
-	  << std::to_string(console.GetNumberOfPeers()));
-    
+    // {{{
+
     console.ListenToTheTeam();
     TRACE("Listening to the team");
     
+    //console.ReceiveTheNumberOfPeers();
     console.ReceiveTheListOfPeers();
     TRACE("List of peers received");
+    TRACE("Number of peers in the team (excluding me) ="
+	  << std::to_string(console.GetNumberOfPeers()));
+
+    // }}}
+
 #endif    
 
     console.DisconnectFromTheSplitter();
     TRACE("Recived the configuration from the splitter.");
     TRACE("Clossing the connection");
-    
+
+    TRACE("Buffering ...");
     console.BufferData();
     TRACE("Buffering done");
 
     console.Start();
     TRACE("Peer running in a thread");
+
+    std::cout << _RESET_COLOR();
+
+#if defined __IMS__
     
-    LOG("+-----------------------------------------------------+");
-    LOG("| Received = Received kbps, including retransmissions |");
-    LOG("|     Sent = Sent kbps                                |");
-    LOG("|       (Expected values are between parenthesis)     |");
-    LOG("------------------------------------------------------+");
-    LOG("");
-    LOG("         |     Received (kbps) |          Sent (kbps) |");
-    LOG("    Time |      Real  Expected |       Real  Expected | Team description");
-    LOG("---------+---------------------+----------------------+-----------------------------------...");
+    std::cout << "                     | Received |     Sent |" << std::endl;
+    std::cout << "                Time |   (kbps) |   (kbps) |" << std::endl;
+    std::cout << "---------------------+----------+----------+" << std::endl;
+
+#else
+
+    /*std::cout << "+-----------------------------------------------------+" << std::endl;
+    std::cout << "| Received = Received kbps, including retransmissions |" << std::endl;
+    std::cout << "|     Sent = Sent kbps                                |" << std::endl;
+    std::cout << "|       (Expected values are between parenthesis)     |" << std::endl;
+    std::cout << "------------------------------------------------------+" << std::endl;*/
+    std::cout << std::endl;
+    std::cout << "                     | Received Expected |     Sent Expected | Team | Team description" << std::endl;
+    std::cout << "                Time |   (kbps)   (kbps) |   (kbps)   (kbps) | size |" << std::endl;
+    std::cout << "---------------------+-------------------+-------------------+------+----------..." << std::endl;
+
+#endif
+    
+    //float kbps_recvfrom = 0.0f;
+    //float kbps_sendto = 0.0f;
+    int kbps_recvfrom = 0;
+    int kbps_sendto = 0;
+    int last_sendto_counter = -1;
+    int last_recvfrom_counter = console.GetRecvfromCounter();
+    
+#if not defined __IMS__
 
     int last_chunk_number = console.GetPlayedChunk();
-    float kbps_expected_recv = 0.0f;
-    float kbps_recvfrom = 0.0f;
-#if not defined __IMS__
-    int last_recvfrom_counter = console.GetRecvfromCounter();
-    int last_sendto_counter = -1;
+    //float kbps_expected_recv = 0.0f;
+    int kbps_expected_recv = 0;
     if (console.GetSendtoCounter() < 0) {
       last_sendto_counter = 0;
     } else {
@@ -570,86 +694,148 @@ namespace p2psp {
       last_sendto_counter = 0;
     }
     float team_ratio = 0.0f;
-    float kbps_expected_sent = 0.0f;
-    float kbps_sendto = 0.0f;
+    //int team_ratio = 0f;
+    //float kbps_expected_sent = 0.0f;
+    int kbps_expected_sent = 0;
     // float nice = 0.0f;
     int counter = 0;
+
 #endif
 
     while (console.IsPlayerAlive()) {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
-      kbps_expected_recv = ((console.GetPlayedChunk() - last_chunk_number) *
-                            console.GetChunkSize() * 8) / 1000.0f;
-      last_chunk_number = console.GetPlayedChunk();
-#if not defined __IMS__
-      kbps_recvfrom = ((console.GetRecvfromCounter() - last_recvfrom_counter) *
-                       console.GetChunkSize() * 8) / 1000.0f;
+
+      { /* Print current time */
+	using boost::posix_time::ptime;
+	using boost::posix_time::second_clock;
+	using boost::posix_time::to_simple_string;
+	using boost::gregorian::day_clock;
+	ptime todayUtc(day_clock::universal_day(), second_clock::universal_time().time_of_day());
+	std::cout << to_simple_string(todayUtc);
+      }
+
+      kbps_sendto = int(((console.GetSendtoCounter() - last_sendto_counter) *
+			 console.GetChunkSize() * 8) / 1000.0f);
+      last_sendto_counter = console.GetSendtoCounter();
+      kbps_recvfrom = int(((console.GetRecvfromCounter() - last_recvfrom_counter) *
+			   console.GetChunkSize() * 8) / 1000.0f);
       last_recvfrom_counter = console.GetRecvfromCounter();
+
+#if not defined __IMS__
+
+      kbps_expected_recv = int(((console.GetPlayedChunk() - last_chunk_number) *
+				console.GetChunkSize() * 8) / 1000.0f);
+      last_chunk_number = console.GetPlayedChunk();
       team_ratio = console.GetPeerList()->size() / (console.GetPeerList()->size() + 1.0f);
       kbps_expected_sent = (int)(kbps_expected_recv * team_ratio);
-      kbps_sendto = ((console.GetSendtoCounter() - last_sendto_counter) *
-                     console.GetChunkSize() * 8) / 1000.0f;
-      last_sendto_counter = console.GetSendtoCounter();
 
-      if (kbps_recvfrom > 0 and kbps_expected_recv > 0) {
-        // nice = 100.0 / (kbps_expected_recv / kbps_recvfrom) *
-        // (console.GetPeerList()->size() + 1.0f);
-      } else {
-        // nice = 0.0f;
-      }
-      LOG("|");
+      /*
+	if (kbps_recvfrom > 0 and kbps_expected_recv > 0) {
+	// nice = 100.0 / (kbps_expected_recv / kbps_recvfrom) *
+	// (console.GetPeerList()->size() + 1.0f);
+	} else {
+	// nice = 0.0f;
+	}*/
 
       if (kbps_expected_recv < kbps_recvfrom) {
-        LOG(_SET_COLOR(_RED));
+	std::cout <<_SET_COLOR(_GREEN);
       } else if (kbps_expected_recv > kbps_recvfrom) {
-        LOG(_SET_COLOR(_GREEN));
+	std::cout << _SET_COLOR(_RED);
       }
-#endif
 
-      // TODO: Format default options
-      boost::format format("Defaut = %5i");
+#endif /* not defined __IMS__ */
+    
+      std::cout
+	<< " |";
+      std::cout
+	<< std::setw(9)
+	<< kbps_recvfrom
+	<< _RESET_COLOR();
+
+#if not defined __IMS__
+    
+      std::cout
+	<< std::setw(9)
+	<< kbps_expected_recv;
+
+      if (kbps_expected_sent < kbps_sendto) {
+	std::cout <<_SET_COLOR(_GREEN);
+      } else if (kbps_expected_sent > kbps_sendto) {
+	std::cout << _SET_COLOR(_RED);
+      }
+
+#endif /* not defined __IMS__ */
+    
+      std::cout
+	<< " |";
+      std::cout
+	<< std::setw(9)
+	<< kbps_sendto
+	<< _RESET_COLOR();
+	
+#if not defined __IMS__
+    
+      std::cout
+	<< std::setw(9)
+	<< kbps_expected_sent;
       
+#endif /* not defined __IMS__ */
+    
+      std::cout << " |";
+    
+      // TODO: Format default options
+      //boost::format format("Defaut = %5i");
+    
       // TODO: format
-      LOG(kbps_expected_recv);
-      LOG(kbps_recvfrom);
+      //O(kbps_expected_recv);
+      //O(kbps_recvfrom);
       //#print(("{:.1f}".format(nice)).rjust(6), end=' | ')
       //#sys.stdout.write(Color.none)
 #ifndef __IMS__
-      if (kbps_expected_sent > kbps_sendto) {
-        LOG(_SET_COLOR(_RED));
-      } else if (kbps_expected_sent < kbps_sendto) {
-        LOG(_SET_COLOR(_GREEN));
-      }
+
+      /*if (kbps_expected_sent > kbps_sendto) {
+	std::cout << _SET_COLOR(_RED);
+	} else if (kbps_expected_sent < kbps_sendto) {
+	std::cout << _SET_COLOR(_GREEN);
+	}*/
+
       // TODO: format
-      LOG(kbps_sendto);
-      LOG(kbps_expected_sent);
+      //std::cout << kbps_sendto;
+      //std::cout << kbps_expected_sent;
       // sys.stdout.write(Color.none)
       // print(repr(nice).ljust(1)[:6], end=' ')
-      LOG(console.GetPeerList()->size());
+      std::cout
+	<< std::setw(5)
+	<< console.GetPeerList()->size()
+	<< " |";
       counter = 0;
-      for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = console.GetPeerList()->begin(); p != console.GetPeerList()->end(); ++p) {
-        if (counter < 5) {
-          LOG("("
-	      << p->address().to_string()
-	      << ","
-	      << std::to_string(p->port())
-              << ")");
-          counter++;
-        } else {
-          break;
-          LOG("");
-        }
+      for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = console.GetPeerList()->begin();
+	   p != console.GetPeerList()->end();
+	   ++p) {
+	if (counter < 5) {
+	  std::cout << "("
+		    << p->address().to_string()
+		    << ","
+		    << std::to_string(p->port())
+		    << ")";
+	  counter++;
+	} else {
+	  break;
+	  std::cout << "";
+	}
       }
 #endif
-
+      std::cout
+	<< std::endl;
     }
-
+    
     return 0;
   }
-}
+    
+    // }}}
+  }
 
-
-int main(int argc, const char* argv[]) {
+    int main(int argc, const char* argv[]) {
   //try {
     return p2psp::run(argc, argv);
     //} catch (boost::system::system_error e) {
@@ -657,4 +843,5 @@ int main(int argc, const char* argv[]) {
     //}
 
   return -1;
+
 }
