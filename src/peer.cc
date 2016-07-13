@@ -529,9 +529,14 @@ namespace p2psp {
 
     console.RequestHeader();
     TRACE("Header requested");
-    
+
+    std::cout
+      << "Relaying header ... ";
     console.RelayHeader();
     TRACE("Header relayed");
+    std::cout
+      << "done!"
+      << std::endl;
     
     console.ReceiveChunkSize();
     TRACE("Chunk size = "
@@ -732,41 +737,47 @@ namespace p2psp {
 	// nice = 0.0f;
 	}*/
 
-#endif /* not defined __IMS__ */
-    
-      std::cout << " |";
-      std::cout << std::setw(9) << kbps_recvfrom;
-
-#if not defined __IMS__
-    
       if (kbps_expected_recv < kbps_recvfrom) {
-	std::cout <<_SET_COLOR(_RED);
+	std::cout <<_SET_COLOR(_GREEN);
       } else if (kbps_expected_recv > kbps_recvfrom) {
-	std::cout << _SET_COLOR(_GREEN);
+	std::cout << _SET_COLOR(_RED);
       }
-
-      std::cout
-	<< std::setw(9)
-	<< kbps_expected_recv
-	<< _RESET_COLOR();
 
 #endif /* not defined __IMS__ */
     
-      std::cout << " |";
-      std::cout << std::setw(9) << kbps_sendto;
+      std::cout
+	<< " |";
+      std::cout
+	<< std::setw(9)
+	<< kbps_recvfrom
+	<< _RESET_COLOR();
 
 #if not defined __IMS__
     
-      if (kbps_expected_sent < kbps_sendto) {
-	std::cout <<_SET_COLOR(_RED);
-      } else if (kbps_expected_sent > kbps_sendto) {
-	std::cout << _SET_COLOR(_GREEN);
-      }
-
       std::cout
 	<< std::setw(9)
-	<< kbps_expected_sent
+	<< kbps_expected_recv;
+
+      if (kbps_expected_sent < kbps_sendto) {
+	std::cout <<_SET_COLOR(_GREEN);
+      } else if (kbps_expected_sent > kbps_sendto) {
+	std::cout << _SET_COLOR(_RED);
+      }
+
+#endif /* not defined __IMS__ */
+    
+      std::cout
+	<< " |";
+      std::cout
+	<< std::setw(9)
+	<< kbps_sendto
 	<< _RESET_COLOR();
+	
+#if not defined __IMS__
+    
+      std::cout
+	<< std::setw(9)
+	<< kbps_expected_sent;
       
 #endif /* not defined __IMS__ */
     
