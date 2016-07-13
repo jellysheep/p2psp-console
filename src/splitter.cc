@@ -11,8 +11,13 @@
 #include <iostream>
 #include <memory>
 #include "common.h"
+#if defined __IMS__
 #include "core/splitter_ims.cc"
+#elif defined __DBS__
 #include "core/splitter_dbs.cc"
+#elif defined __ACS__
+#include "core/splitter_acs.cc"
+#endif
 //#include "core/splitter_acs.h"
 //#include "core/splitter_lrs.h"
 //#include "core/splitter_nts.h"
