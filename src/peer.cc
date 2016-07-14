@@ -478,10 +478,8 @@ namespace p2psp {
     // {{{ Peer instantiation
     
     //class Console* console = new Console();
-#if defined __IMS__
-#elif defined __DBS__
     std::unique_ptr<p2psp::Console> console;
-#endif
+    p2psp::Console_DBS* console_dbs = new p2psp::Console_DBS();
     
     if (vm.count("monitor")) {
       // Monitor peer
@@ -492,8 +490,8 @@ namespace p2psp {
     } else {
       // Normal peer
 #if defined __DBS__
-      p2psp::Console_DBS* console_ptr = new p2psp::Console_DBS();
-      console.reset(console_ptr);
+      //p2psp::Console_DBS* console_ptr = new p2psp::Console_DBS();
+      console.reset(console_dbs);
 #elif defined __NTS__
       p2psp::PeerSYMSP* console_ptr = new p2psp::PeerSYMSP();
       if (vm.count("source_port_step")) {
@@ -509,7 +507,7 @@ namespace p2psp {
     
     if (vm.count("player_port")) {
       // {{{
-      //p2psp::Console* console_ptr = new p2psp::Console();
+
       console->SetPlayerPort(vm["player_port"].as<uint16_t>());
       TRACE("Player port = "
 	    << console->GetPlayerPort());
@@ -661,18 +659,14 @@ namespace p2psp {
     
     // {{{
 
-    {
-      p2psp::Console_DBS* console_ptr = new p2psp::Console_DBS();
-      console_ptr->ListenToTheTeam();
-    }
+    console_dbs->ListenToTheTeam();
     TRACE("Listening to the team");
     
-    //console->ReceiveTheNumberOfPeers();
-    console->ReceiveTheListOfPeers();
+    console_dbs->ReceiveTheListOfPeers();
     TRACE("List of peers received");
     TRACE("Number of peers in the team (excluding me) ="
-	  << std::to_string(console->GetNumberOfPeers()));
-
+	    << std::to_string(console_dbs->GetNumberOfPeers()));
+    
     // }}}
 
 #endif    
@@ -761,7 +755,7 @@ namespace p2psp {
       kbps_expected_recv = int(((console->GetPlayedChunk() - last_chunk_number) *
 				console->GetChunkSize() * 8) / 1000.0f);
       last_chunk_number = console->GetPlayedChunk();
-      team_ratio = console->GetPeerList()->size() / (console->GetPeerList()->size() + 1.0f);
+      team_ratio = console_dbs->GetPeerList()->size() / (console_dbs->GetPeerList()->size() + 1.0f);
       kbps_expected_sent = (int)(kbps_expected_recv * team_ratio);
 
       /*
@@ -841,12 +835,11 @@ namespace p2psp {
       // print(repr(nice).ljust(1)[:6], end=' ')
       std::cout
 	<< std::setw(5)
-	<< console->GetPeerList()->size()
+	<< console_dbs->GetPeerList()->size()
 	<< " |";
+
       counter = 0;
-      for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = console->GetPeerList()->begin();
-	   p != console->GetPeerList()->end();
-	   ++p) {
+      for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = console_dbs->GetPeerList()->begin(); p != console_dbs->GetPeerList()->end(); ++p) {
 	if (counter < 5) {
 	  std::cout << "("
 		    << p->address().to_string()
