@@ -491,7 +491,7 @@ namespace p2psp {
       // Normal peer
 #if defined __DBS__
       //p2psp::Console_DBS* console_ptr = new p2psp::Console_DBS();
-      console.reset(console_dbs);
+      console.reset(/*console_dbs*/new p2psp::Console_DBS());
 #elif defined __NTS__
       p2psp::PeerSYMSP* console_ptr = new p2psp::PeerSYMSP();
       if (vm.count("source_port_step")) {
@@ -540,9 +540,10 @@ namespace p2psp {
     
     console->ConnectToTheSplitter();
     TRACE("Connected to the splitter");
-    /*std::cout
-      << console->splitter_socket_.local_endpoint().port()
-      << std::endl;*/
+    std::cout
+      << "Real splitter port = "
+      << console->GetRealSplitterPort()
+      << std::endl;
 
     console->ReceiveSourceEndpoint();
     TRACE("Source = ("
