@@ -540,6 +540,9 @@ namespace p2psp {
     
     console->ConnectToTheSplitter();
     TRACE("Connected to the splitter");
+    /*std::cout
+      << console->splitter_socket_.local_endpoint().port()
+      << std::endl;*/
 
     console->ReceiveSourceEndpoint();
     TRACE("Source = ("
