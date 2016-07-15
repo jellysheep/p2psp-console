@@ -839,7 +839,9 @@ namespace p2psp {
 	<< " |";
 
       counter = 0;
-      for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = console_dbs->GetPeerList()->begin(); p != console_dbs->GetPeerList()->end(); ++p) {
+      for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = console_dbs->GetPeerList()->begin();
+	   p != console_dbs->GetPeerList()->end();
+	   ++p) {
 	if (counter < 5) {
 	  std::cout << "("
 		    << p->address().to_string()
