@@ -40,10 +40,9 @@ namespace p2psp {
   class Console: public Monitor_DBS {
   #endif*/
   class Console: public Peer_core {
-  
     // {{{
-
   protected:
+    // {{{
 
     struct Source {
       ip::address addr;
@@ -59,8 +58,10 @@ namespace p2psp {
     struct Source source;
     std::string GET_message_;
     std::string channel_;
-    
+
+    // }}}
   public:
+    // {{{
 
     Console() : io_service_(),
 		acceptor_(io_service_),
@@ -478,20 +479,29 @@ namespace p2psp {
     // {{{ Peer instantiation
     
     //class Console* console = new Console();
-    std::unique_ptr<p2psp::Console> console;
-    p2psp::Console_DBS* console_dbs = new p2psp::Console_DBS();
+    std::shared_ptr<p2psp::Console> console;
+    p2psp::Console_DBS* console_dbs = new p2psp::Console_DBS(); // Ver si se puede eliminar
+
+
+#if defined __IMS__
+
+    TRACE("Using IMS");
+#else
+
+    TRACE("Using DBS");
     
     if (vm.count("monitor")) {
       // Monitor peer
       LOG("Monitor enabled.");
 #if defined __DBS__
-      console.reset(new p2psp::Console_Monitor_DBS());
+      p2psp::Console_Monitor_DBS* ptr = new p2psp::Console_Monitor_DBS();
+      console.reset(ptr);
 #endif
     } else {
       // Normal peer
 #if defined __DBS__
-      //p2psp::Console_DBS* console_ptr = new p2psp::Console_DBS();
-      console.reset(/*console_dbs*/new p2psp::Console_DBS());
+      p2psp::Console_DBS* ptr = new p2psp::Console_DBS();
+      console.reset(ptr);
 #elif defined __NTS__
       p2psp::PeerSYMSP* console_ptr = new p2psp::PeerSYMSP();
       if (vm.count("source_port_step")) {
@@ -501,6 +511,8 @@ namespace p2psp {
 #endif /* __NTS__ */
     }
 
+#endif /* __IMS__ */
+    
     // }}}
     
     console->Init();
@@ -583,10 +595,7 @@ namespace p2psp {
 	  << console->GetBufferSize());
 
 #if defined __IMS__
-
     // {{{
-
-    TRACE("Using IMS");
     
     console->ReceiveMcastGroup();
     TRACE("Using IP multicast group = ("
@@ -596,9 +605,7 @@ namespace p2psp {
 	  << ")");
 
     // }}}
-
 #elif defined _DBS_
-
     // {{{
 
     TRACE("Using DBS");
@@ -606,9 +613,10 @@ namespace p2psp {
     if (vm.count("max_chunk_debt")) {
       // {{{
       
-      console->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
+      console_dbs->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
       TRACE("Maximum chunk debt = "
 	    << Console->GetMaxChunkDebt());
+      console.reset(console_dbs);
       
       // }}}
     }
@@ -634,9 +642,7 @@ namespace p2psp {
     }
 
     // }}}
-
 #eise if defined _NTS_
-
     // {{{
 
     TRACE("Using NTS");
@@ -648,31 +654,24 @@ namespace p2psp {
 	  << Console->GetPortStep());
 
     // }}}
-    
 #endif
 
-#if defined __IMS__
-    
-    // {{{
-
-    console->ListenToTheTeam();
-
-    // }}}
-
-#else
-    
-    // {{{
-
-    console_dbs->ListenToTheTeam();
+#if defined __DBS__
+    p2psp::Console_DBS* ptr = new p2psp::Console_DBS();
+    ptr->ListenToTheTeam();
+    console.reset(ptr);
     TRACE("Listening to the team");
-    
+#endif
+
+#if defined __DBS__    
+    // {{{
+
     console_dbs->ReceiveTheListOfPeers();
     TRACE("List of peers received");
     TRACE("Number of peers in the team (excluding me) ="
-	    << std::to_string(console_dbs->GetNumberOfPeers()));
-    
-    // }}}
+	    << std::to_string(console_dbs->GetNumberOfPeers()));    
 
+    // }}}
 #endif    
 
     console->DisconnectFromTheSplitter();
@@ -865,7 +864,7 @@ namespace p2psp {
     
     return 0;
   }
-    
+
     // }}}
   }
 
