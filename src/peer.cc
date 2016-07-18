@@ -328,11 +328,11 @@ namespace p2psp {
       // }}}
       }*/
 
-    bool PlayChunk(std::vector<char> chunk) {
+    bool PlayChunk(/*std::vector<char> chunk*/int chunk_number) {
       // {{{
 
       try {
-        write(player_socket_, buffer(chunk));
+        write(player_socket_, buffer(chunks_[chunk_number % buffer_size_].data));
         return true;
       } catch (std::exception e) {
         TRACE("Player disconnected!");
