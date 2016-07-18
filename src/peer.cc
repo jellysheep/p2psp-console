@@ -25,6 +25,12 @@
 #include "core/peer_ims.h"
 #elif defined __DBS__
 #include "core/monitor_dbs.h"
+#elif defined __LRS__
+#include "core/monitor_lrs.h"
+#elif defined __NTS__
+#include "core/peer_nts.h"
+#include "core/peer_symsp.h"
+#include "core/monitor_nts.h"
 #endif
 #include "util/trace.h"
 
@@ -33,12 +39,14 @@
 namespace p2psp {
   using namespace std;
   using namespace boost;
-  
+
+  class Console: 
 #if defined __IMS__  
-  class Console: public Peer_IMS {
+    public Peer_IMS
 #elif defined __DBS__
-  class Console: public Peer_DBS {
+    public Peer_DBS
 #endif
+  {
     //  class Console: public Peer_core {
     // {{{
   protected:
@@ -370,11 +378,19 @@ namespace p2psp {
     // }}}
   };
 
-    /*
-  class Console_DBS: public Console, public Peer_DBS {};
-  class Console_Monitor_DBS: public Console, public Monitor_DBS {};
-    */
-    
+    //class Console_DBS: public Console, public Peer_DBS {};
+#if defined (__DBS__)
+    class Console_Monitor: public Console, public Monitor_DBS {};
+#elif defined (__LRS__)
+    class Console_Monitor: public Console, public Monitor_LRS {}; // Monitor_LRS <- Monitor_DBS
+#elif defined (__NTS__)
+    class Console_Monitor: public Console, public Monitor_NTS {}; // Monitor_NTS <- Peer_NTS <- Peer_DBS
+#elif defined (__NTS__) && defined (__LRS__)
+    class Console_Monitor: public Console, public Monitor_NTS, public Monitor_LRS {};
+    //#elif defined (__NTS__) && defined (
+    //class Console_Monitor: public Console, public Monitor_NTS {};
+#endif
+
   int run(int argc, const char* argv[]) throw(boost::system::system_error) {
     // {{{
 
@@ -480,20 +496,24 @@ namespace p2psp {
 
     // {{{ Peer instantiation
     
-    class Console* console = new Console();
-    //std::shared_ptr<p2psp::/*Console*/Peer_core> console;
-    //p2psp::Console_DBS* console_dbs = new p2psp::Console_DBS(); // Ver si se puede eliminar
+    //class Console* console = new Console();
+    std::unique_ptr<p2psp::Console> console;
+    //= new p2psp::Console();
 
 #if defined __IMS__
     TRACE("Using IMS");
+    
 #elif defined __DBS__
     TRACE("Using DBS");
     
     if (vm.count("monitor")) {
       LOG("Monitor peer.");
+      //class Console_Monitor: public Console, public Monitor_DBS {};
+      console.reset(new p2psp::Console_Monitor());
       //p2psp::Console_Monitor_DBS* ptr = new p2psp::Console_Monitor_DBS();
       //console.reset(ptr);
     } else {
+      console.reset(new p2psp::Console());
       //p2psp::Console_DBS* ptr = new p2psp::Console_DBS();
       //console.reset(ptr);
       std::cout << "hola" << std::endl;
@@ -501,7 +521,7 @@ namespace p2psp {
       console->SetSendtoCounter(10);
       std::cout << "SendtoCounter = " << console->GetSendtoCounter() << std::endl;
 #if defined __NTS__
-      p2psp::PeerSYMSP* console_ptr = new p2psp::PeerSYMSP();
+      p2psp::Peer_SYMSP* console_ptr = new p2psp::Peer_SYMSP();
       if (vm.count("source_port_step")) {
         console_ptr->SetPortStep(vm["source_port_step"].as<int>());
       }

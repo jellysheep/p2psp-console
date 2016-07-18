@@ -1,5 +1,5 @@
 //#define __IMS__
 #define __DBS__
-
-#define O(a) {std::cout << a << std::endl;}
-#define E(a) {std::cerr << a << std::endl;}
+//#define __ACS__ // __DBS__ must be defined
+//#define __LRS__ // __DBS__ must be defined
+#define __NTS__ // __DBS__ must be defined

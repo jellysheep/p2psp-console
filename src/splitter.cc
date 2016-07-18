@@ -21,6 +21,10 @@
 #include "core/splitter_dbs.cc"
 #elif defined __ACS__
 #include "core/splitter_acs.cc"
+#elif defined __LRS__
+#include "core/splitter_lrs.cc"
+#elif defined __NTS__
+#include "core/splitter_nts.cc"
 #endif
 //#include "core/splitter_acs.h"
 //#include "core/splitter_lrs.h"
@@ -39,12 +43,18 @@
 p2psp::Splitter_IMS splitter;
 #elif defined __DBS__
 p2psp::Splitter_DBS splitter;
+#elif defined __ACS__
+p2psp::Splitter_ACS splitter;
+#elif defined __LRS__
+p2psp::Splitter_LRS splitter;
+#elif defined __NTS__
+p2psp::Splitter_NTS splitter;
 #endif
 
 void HandlerCtrlC(int s) {
   // {{{
 
-  O("Keyboard interrupt detected ... Exiting!");
+  LOG("Keyboard interrupt detected ... Exiting!");
 
   // Say to daemon threads that the work has been finished,
   splitter.SetAlive(false);
@@ -105,7 +115,7 @@ int main(int argc, const char *argv[]) {
     int TTL = splitter.GetDefaultTTL();
 #elif defined __DBS__
     int max_number_of_chunk_loss = splitter.GetDefaultMaxNumberOfChunkLoss();
-    int monitors_number = splitter.GetDefaultMonitorsNumber();
+    int number_of_monitors = splitter.GetDefaultNumberOfMonitors();
 #endif
 
     // TODO: strpe option should expect a list of arguments, not bool
@@ -117,7 +127,7 @@ int main(int argc, const char *argv[]) {
       ("header_size", boost::program_options::value<int>()->default_value(header_size), "Length of the header of the stream in bytes.")
 #if defined __DBS__
       ("max_number_of_chunk_loss", boost::program_options::value<int>()->default_value(max_number_of_chunk_loss), "Maximum number of lost chunks for an unsupportive peer.")
-      ("monitors_number", boost::program_options::value<int>()->default_value(monitors_number), "Number of monitors in the team. The first connecting peers will automatically become monitors.")
+      ("number_of_monitors", boost::program_options::value<int>()->default_value(number_of_monitors), "Number of monitors in the team. The first connecting peers will automatically become monitors.")
 #endif
 #if defined __IMS__
       ("mcast_addr",boost::program_options::value<std::string>()->default_value(mcast_addr), "IP multicast address used to broadcast the chunks.")
@@ -283,12 +293,12 @@ int main(int argc, const char *argv[]) {
 
   // }}}
 
-  if (vm.count("max_number_of_monitors")) {
+  if (vm.count("number_of_monitors")) {
     // {{{
 
-    splitter.SetMonitorsNumber(vm["monitors_number"].as<int>());
+    splitter.SetNumberOfMonitors(vm["number_of_monitors"].as<int>());
     TRACE("Number of monitors = "
-	  << splitter.GetMonitorsNumber());
+	  << splitter.GetNumberOfMonitors());
 
     // }}}
   }
