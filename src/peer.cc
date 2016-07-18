@@ -486,26 +486,21 @@ namespace p2psp {
 
 #if defined __IMS__
     TRACE("Using IMS");
-#else
+#elif defined __DBS__
     TRACE("Using DBS");
     
     if (vm.count("monitor")) {
-      // Monitor peer
-      LOG("Monitor enabled.");
-#if defined __DBS__
+      LOG("Monitor peer.");
       //p2psp::Console_Monitor_DBS* ptr = new p2psp::Console_Monitor_DBS();
       //console.reset(ptr);
-#endif
     } else {
-      // Normal peer
-#if defined __DBS__
       //p2psp::Console_DBS* ptr = new p2psp::Console_DBS();
       //console.reset(ptr);
       std::cout << "hola" << std::endl;
       std::cout << "SendtoCounter = " << console->GetSendtoCounter() << std::endl;
       console->SetSendtoCounter(10);
       std::cout << "SendtoCounter = " << console->GetSendtoCounter() << std::endl;
-#elif defined __NTS__
+#if defined __NTS__
       p2psp::PeerSYMSP* console_ptr = new p2psp::PeerSYMSP();
       if (vm.count("source_port_step")) {
         console_ptr->SetPortStep(vm["source_port_step"].as<int>());
@@ -514,7 +509,7 @@ namespace p2psp {
 #endif /* __NTS__ */
     }
 
-#endif /* __IMS__ */
+#endif
     
     // }}}
     
