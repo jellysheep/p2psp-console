@@ -99,8 +99,9 @@ if(BUILD_MONITOR)
   add_executable(monitor "src/peer.cc")
 
   # Defines
-  add_definitions(-D__monitor__)
-  
+  #add_definitions(-D__monitor__)
+  target_compile_definitions(monitor PUBLIC __monitor__)
+
   # Libraries
   target_link_libraries(monitor
     ${P2PSP_LIBRARY}

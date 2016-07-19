@@ -26,16 +26,16 @@
 #include "core/peer_ims.h"
 #endif   /* __IMS__ */
 
-#if defined __DBS__
+#if defined __DBS__ || defined __ACS__
 #if defined __monitor__
 #include "core/monitor_dbs.h"    // Includes peer_dbs.h
 #else
 #include "core/peer_dbs.h"
 #endif   /* __monitor__ */
-#endif   /* __DBS__ */
+#endif   /* __DBS__ || __ACS__ */
 
 #if defined __LRS__
-#include "core/monitor_lrs.h"
+#include "core/monitor_lrs.h"   // Includes monitor_dbs.h
 #endif   /* __LRS__ */
 
 #if defined __NTS__
@@ -61,21 +61,25 @@ namespace p2psp {
     public Peer_IMS
 #endif
 
-#if defined __DBS__
+#if defined __DBS__ || defined __ACS__
 #if defined __monitor__
     public Monitor_DBS
 #else
     public Peer_DBS
 #endif /* __monitor__ */
-#endif /* __DBS__ */
+#endif /* __DBS__ || __ACS__ */
 
+#if defined __LRS__
+    public Monitor_LRS
+#endif /* __LRS__ */
+  
 #if defined __NTS__
 #if defined __monitor__
     public Monitor_NTS
 #else
     public Peer_SYMSP
 #endif /* __monitor__ */
-#endif /* __DBS__ */
+#endif /* __NTS__ */
 
   {
     //  class Console: public Peer_core {
@@ -408,45 +412,6 @@ namespace p2psp {
 
     // }}}
   };
-
-#ifdef _1_
-  class Console_DBS: public Console, public Peer_DBS {};
-  class Console_Monitor_DBS: public Console, public Monitor_DBS {};
-#endif
-  
-#ifdef _1_
-  class Peer: public Console,
-#if defined __IMS__
-	      public Peer_IMS
-#endif
-#if defined __DBS__
-	      public Peer_DBS
-#endif
-#if defined __NTS__
-	      public Peer_NTS // NTS <- DBS 
-#endif
-  {};
-
-
-#if not defined __IMS__
-  class Monitor: public Console,
-#if defined __DBS__
-		 public Monitor_DBS
-#endif
-#if defined __LRS__
-		 public Monitor_LRS // Monitor_LRS <- Monitor_DBS
-#endif
-#if defined __NTS__
-		 public Monitor_NTS // Monitor_NTS <- Peer_NTS <- Peer_DBS
-#endif
-#if defined __NTS__ && defined __LRS__
-		 public Monitor_NTS, public Monitor_LRS
-  //#elif defined (__NTS__) && defined (
-  //class Console_Monitor: public Console, public Monitor_NTS {};
-#endif
-  {};
-#endif
-#endif /* _1_ */
   
   int run(int argc, const char* argv[]) throw(boost::system::system_error) {
     // {{{
@@ -458,6 +423,10 @@ namespace p2psp {
       "Using IMS.\n"
 #elif defined __DBS__
       "Using DBS.\n"
+#elif defined __ACS__
+      "Using ACS.\n"
+#elif defined __LRS__
+      "Using LRS.\n"
 #elif defined __NTS__
       "Using NTS.\n"
 #endif
@@ -472,7 +441,7 @@ namespace p2psp {
       //      uint16_t source_port = Console::GetDefaultSourcePort();
       std::string splitter_addr = p2psp::Peer_core::GetDefaultSplitterAddr().to_string();
       uint16_t splitter_port = p2psp::Peer_core::GetDefaultSplitterPort();
-#if defined __DBS__
+#if not defined __IMS__
       int max_chunk_debt = p2psp::Peer_DBS::GetDefaultMaxChunkDebt();
       uint16_t team_port = p2psp::Peer_core::GetDefaultTeamPort();
 #endif
@@ -486,11 +455,11 @@ namespace p2psp {
       desc.add_options()
         ("help,h", "Produce this help message and exits.")
 	//	("channel", boost::program_options::value<std::string>()->default_value(channel), "Name of the channel served by the streaming source.")
-#if defined __DBS__
+	/*#if defined __DBS__ || defined __ACS__
         ("enable_chunk_loss", boost::program_options::value<std::string>(), "Forces a lost of chunks.")
-#endif
+	#endif*/
 	//("header_size", boost::program_options::value<int>()->default_value(header_size), "Size of the header of the stream in chunks.")
-#if defined __DBS__
+#if not defined __IMS__
         ("max_chunk_debt", boost::program_options::value<int>()->default_value(max_chunk_debt), "Maximum number of times that other peer can not send a chunk to this peer.")
 #endif
         ("player_port", boost::program_options::value<uint16_t>()->default_value(player_port), "Port to communicate with the player.")
@@ -553,32 +522,36 @@ namespace p2psp {
 
     // }}}
 
+#if defined __IMS__
+    std::cout << "Using Peer_IMS" << std::endl;
+    //peer.reset(new p2psp::Console_IMS());
+#endif
+    
+#if defined __DBS__ || defined __ACS__
+#if defined __monitor__
+    std::cout << "Using Monitor_DBS" << std::endl;
+#else
+    std::cout << "Using Peer_DBS" << std::endl;
+#endif /* __monitor__ */
+#endif /* __DBS__ || __ACS__ */
+
+#if defined __LRS__
+    std::cout << "Using Monitor_LRS" << std::endl;
+#endif /* __LRS__ */
+    
+#if defined __NTS__
+#if defined __monitor__
+    std::cout << "Using Monitor_NTS" << std::endl;
+#else
+    std::cout << "Using Peer_NTS" << std::endl;
+#endif /* __monitor__ */
+#endif /* __NTS__ */
+
     // {{{ Peer instantiation
     
     class Console* peer = new Console();
     //std::shared_ptr<Console> peer;
     //= new p2psp::Console();
-
-#if defined __IMS__
-    LOG("Using Peer_IMS");
-    //peer.reset(new p2psp::Console_IMS());
-#endif
-    
-#if defined __DBS__
-#if defined __monitor__
-    LOG("Using Monitor_DBS");
-#else
-    LOG("Using Peer_DBS");
-#endif /* __monitor__ */
-#endif /* __DBS__ */
-
-#if defined __NTS__
-#if defined __monitor__
-    LOG("Using Monitor_NTS");
-#else
-    LOG("Using Peer_NTS");
-#endif /* __monitor__ */
-#endif /* __NTS__ */
 
 #ifdef _1_
     //std::shared_ptr<p2psp::Console_DBS> ptr = std::static_pointer_cast<p2psp::Console_DBS>(peer);
@@ -666,12 +639,9 @@ namespace p2psp {
     peer->RequestHeader();
     LOG("Header requested");
 
-    LOG("Relaying header ... ");
+    std::cout << "Relaying header ... " << std::flush;
     peer->RelayHeader();
-    LOG("Header relayed");
-    /*std::cout
-      << "done!"
-      << std::endl;*/
+    std::cout << "done" << std::endl;
     
     peer->ReceiveChunkSize();
     LOG("Chunk size = "
@@ -743,30 +713,18 @@ namespace p2psp {
     // }}}
 #endif
 
-#if defined __IMS__
     peer->ListenToTheTeam();
+    TRACE("Listening to the team");
 
-#else
-    
+#if not defined __IMS__
     // {{{
 
-    {
-      //peer->SetSendtoCounter(30);
-      //std::shared_ptr<p2psp::Peer_DBS> ptr = std::static_pointer_cast<p2psp::Console_D>(peer);
-      //std::cout << "counter = " << ptr->GetSendtoCounter() << std::endl;
-      //ptr.reset(new Peer_DBS);
-      //p2psp::Peer_DBS* ptr = new p2psp::Peer_DBS();
-      //std::cout << "Antes listen" << std::endl;
-      //std::cout << "number of peers = " << ptr->IsPlayerAlive() << std::endl;
-      peer->ListenToTheTeam();
-      //std::cout << "Después listen" << std::endl;
-      TRACE("Listening to the team");
-      peer->ReceiveTheListOfPeers();
-    //peer.reset(ptr);
-      TRACE("List of peers received");
-      LOG("Number of peers in the team (excluding me) ="
-	  << std::to_string(peer/*ptr*/->GetNumberOfPeers()));    
-    }
+    std::cout << "Receiving the list of peers ... " << std::flush;
+    peer->ReceiveTheListOfPeers();
+    std::cout << "done" << std::endl;
+    TRACE("List of peers received");
+    LOG("Number of peers in the team (excluding me) ="
+	<< std::to_string(peer/*ptr*/->GetNumberOfPeers()));    
     
     // }}}
 #endif    
@@ -775,9 +733,9 @@ namespace p2psp {
     LOG("Recived the configuration from the splitter.");
     LOG("Clossing the connection");
 
-    TRACE("Buffering ...");
+    std::cout << "Buffering ... " << std::flush;
     peer->BufferData();
-    TRACE("Buffering done");
+    std::cout << "done" << std::endl;
 
     peer->Start();
     LOG("Peer running in a thread");
@@ -798,8 +756,8 @@ namespace p2psp {
     std::cout << "|       (Expected values are between parenthesis)     |" << std::endl;
     std::cout << "------------------------------------------------------+" << std::endl;*/
     std::cout << std::endl;
-    std::cout << "                     | Received Expected |     Sent Expected | Team | Team description" << std::endl;
-    std::cout << "                Time |   (kbps)   (kbps) |   (kbps)   (kbps) | size |" << std::endl;
+    std::cout << "                     | Received Expected |     Sent Expected | Team |" << std::endl;
+    std::cout << "                Time |   (kbps)   (kbps) |   (kbps)   (kbps) | size | Peer list" << std::endl;
     std::cout << "---------------------+-------------------+-------------------+------+----------..." << std::endl;
 
 #endif

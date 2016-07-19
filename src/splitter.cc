@@ -184,6 +184,22 @@ int main(int argc, const char *argv[]) {
 
   // }}}
 
+#if defined __IMS__
+  std::cout << "Using Splitter_IMS" << std::endl;
+#endif /* __IMS__ */
+  
+#if defined __DBS__
+  std::cout << "Using Splitter_DBS" << std::endl;
+#endif /* __DBS__  */
+  
+#if defined __LRS__
+  std::cout << "Using Splitter_LRS" << std::endl;
+#endif /* __LRS__ */
+  
+#if defined __NTS__
+  std::cout << "Using Splitter_NTS" << std::endl;
+#endif /* __NTS__ */
+  
   if (vm.count("buffer_size")) {
     // {{{
 
