@@ -17,15 +17,18 @@
 
 #if defined __IMS__
 #include "core/splitter_ims.cc"
-#elif defined __DBS__
+#else /* __DBS__ */
 #include "core/splitter_dbs.cc"
-#elif defined __ACS__
+#if defined __ACS__
 #include "core/splitter_acs.cc"
-#elif defined __LRS__
-#include "core/splitter_lrs.cc"
-#elif defined __NTS__
-#include "core/splitter_nts.cc"
 #endif
+#if defined __LRS__
+#include "core/splitter_lrs.cc"
+#endif
+#if defined __NTS__
+#include "core/splitter_nts.cc"
+#endif /* __NTS__ */
+#endif /* !__IMS__ */
 //#include "core/splitter_acs.h"
 //#include "core/splitter_lrs.h"
 //#include "core/splitter_nts.h"
