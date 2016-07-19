@@ -405,10 +405,8 @@ int main(int argc, const char *argv[]) {
       splitter_acs->SetNumberOfSentChunksPerPeer(*it, 0);
       }*/
     }
-
-    std::cout << std::endl;
-    
 #endif     
+    std::cout << std::endl;
   }
 
   std::cout << "Ending ..." << std::endl;
