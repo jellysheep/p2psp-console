@@ -2,6 +2,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 option(BUILD_PEER "Build the peer" ON)
+option(BUILD_MONITOR "Build the peer" OFF)
 option(BUILD_SPLITTER "Build the splitter" ON)
 
 option(BUILD_WITH_CLANG "Build using the Clang compiler" OFF)
@@ -91,6 +92,25 @@ if(BUILD_PEER)
   # Enable C++11 for CMake 3.1.0 or later
   set_property(TARGET peer PROPERTY CXX_STANDARD 11)
   set_property(TARGET peer PROPERTY CXX_STANDARD_REQUIRED ON)
+endif()
+
+if(BUILD_MONITOR)
+  # Executable
+  add_executable(monitor "src/peer.cc")
+
+  # Defines
+  add_definitions(-D__monitor__)
+  
+  # Libraries
+  target_link_libraries(peer
+    ${P2PSP_LIBRARY}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${Boost_LIBRARIES}
+  )
+
+  # Enable C++11 for CMake 3.1.0 or later
+  set_property(TARGET monitor PROPERTY CXX_STANDARD 11)
+  set_property(TARGET monitor PROPERTY CXX_STANDARD_REQUIRED ON)
 endif()
 
 if(BUILD_SPLITTER)
