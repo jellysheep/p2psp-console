@@ -24,25 +24,29 @@
 
 #if defined __IMS__
 #include "core/peer_ims.h"
-#endif
+#endif   /* __IMS__ */
 
 #if defined __DBS__
 #if defined __monitor__
-#include "core/monitor_dbs.h" // Includes peer_dbs.h
+#include "core/monitor_dbs.h"    // Includes peer_dbs.h
 #else
 #include "core/peer_dbs.h"
-#endif /* __monitor__ */
-#endif /* __DBS__ */
+#endif   /* __monitor__ */
+#endif   /* __DBS__ */
 
 #if defined __LRS__
 #include "core/monitor_lrs.h"
-#endif
+#endif   /* __LRS__ */
 
 #if defined __NTS__
-#include "core/peer_nts.h"
-#include "core/peer_symsp.h"
-#include "core/monitor_nts.h"
-#endif /* __NTS__ */
+#if defined __monitor__
+#include "core/monitor_nts.h"   // Includes Peer_NTS
+#else
+//#include "core/peer_nts.h"      // Includes peer_dbs.h
+#include "core/peer_symsp.h"    // Includes peer_nts.h, which includes peer_dbs.h
+#endif    /* __monitor__ */
+#endif    /* __NTS__ */
+
 #include "util/trace.h"
 
 // }}}
@@ -62,6 +66,14 @@ namespace p2psp {
     public Monitor_DBS
 #else
     public Peer_DBS
+#endif /* __monitor__ */
+#endif /* __DBS__ */
+
+#if defined __NTS__
+#if defined __monitor__
+    public Monitor_NTS
+#else
+    public Peer_SYMSP
 #endif /* __monitor__ */
 #endif /* __DBS__ */
 
@@ -446,6 +458,8 @@ namespace p2psp {
       "Using IMS.\n"
 #elif defined __DBS__
       "Using DBS.\n"
+#elif defined __NTS__
+      "Using NTS.\n"
 #endif
       "Parameters";
 
@@ -546,17 +560,25 @@ namespace p2psp {
     //= new p2psp::Console();
 
 #if defined __IMS__
-    TRACE("Using Peer_IMS");
+    LOG("Using Peer_IMS");
     //peer.reset(new p2psp::Console_IMS());
 #endif
+    
 #if defined __DBS__
-
 #if defined __monitor__
-    TRACE("Using Monitor_DBS");
+    LOG("Using Monitor_DBS");
 #else
     LOG("Using Peer_DBS");
 #endif /* __monitor__ */
 #endif /* __DBS__ */
+
+#if defined __NTS__
+#if defined __monitor__
+    LOG("Using Monitor_NTS");
+#else
+    LOG("Using Peer_NTS");
+#endif /* __monitor__ */
+#endif /* __NTS__ */
 
 #ifdef _1_
     //std::shared_ptr<p2psp::Console_DBS> ptr = std::static_pointer_cast<p2psp::Console_DBS>(peer);
@@ -575,13 +597,6 @@ namespace p2psp {
       std::cout << "SendtoCounter = " << peer->GetSendtoCounter() << std::endl;
       peer->SetSendtoCounter(10);
       std::cout << "SendtoCounter = " << peer->GetSendtoCounter() << std::endl;
-#if defined __NTS__
-      /*p2psp::Peer_SYMSP* peer_ptr = new p2psp::Peer_SYMSP();
-      if (vm.count("source_port_step")) {
-        peer_ptr->SetPortStep(vm["source_port_step"].as<int>());
-      }
-      peer.reset(peer_ptr);*/
-#endif /* __NTS__ */
     }
 
 #endif /* _1_ */
@@ -677,8 +692,9 @@ namespace p2psp {
 	<< ")");
 
     // }}}
-#endif
-#if defined _DBS_
+
+#else /* __IMS__ */
+    
     // {{{
 
     if (vm.count("max_chunk_debt")) {
@@ -686,7 +702,7 @@ namespace p2psp {
       
       peer->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
       LOG("Maximum chunk debt = "
-	  << Peer->GetMaxChunkDebt());
+	  << peer->GetMaxChunkDebt());
       //peer.reset(peer_dbs);
       
       // }}}
@@ -713,9 +729,9 @@ namespace p2psp {
     }
 
     // }}}
-#endif
+#endif /* __IMS__*/
     
-#if defined _NTS_
+#if defined __NTS__
     // {{{
 
     if (vm.count("source_port_step")) {
@@ -729,9 +745,9 @@ namespace p2psp {
 
 #if defined __IMS__
     peer->ListenToTheTeam();
-#endif
+
+#else
     
-#if defined __DBS__
     // {{{
 
     {
