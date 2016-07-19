@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 option(BUILD_PEER "Build the peer" ON)
-option(BUILD_MONITOR "Build the peer" OFF)
+option(BUILD_MONITOR "Build the monitor" ON)
 option(BUILD_SPLITTER "Build the splitter" ON)
 
 option(BUILD_WITH_CLANG "Build using the Clang compiler" OFF)
@@ -102,7 +102,7 @@ if(BUILD_MONITOR)
   add_definitions(-D__monitor__)
   
   # Libraries
-  target_link_libraries(peer
+  target_link_libraries(monitor
     ${P2PSP_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
     ${Boost_LIBRARIES}
