@@ -445,7 +445,7 @@ namespace p2psp {
       int max_chunk_debt = p2psp::Peer_DBS::GetDefaultMaxChunkDebt();
       uint16_t team_port = p2psp::Peer_core::GetDefaultTeamPort();
 #endif
-#if defined __NTS__
+#if defined __NTS__ && not defined __monitor__
       int source_port_step = 0;
 #endif
       //      std::string channel = Console::GetDefaultChannel();
@@ -463,7 +463,7 @@ namespace p2psp {
         ("max_chunk_debt", boost::program_options::value<int>()->default_value(max_chunk_debt), "Maximum number of times that other peer can not send a chunk to this peer.")
 #endif
         ("player_port", boost::program_options::value<uint16_t>()->default_value(player_port), "Port to communicate with the player.")
-#if defined __NTS__
+#if defined __NTS__ && not defined __monitor__
         ("source_port_step", boost::program_options::value<int>()->default_value(source_port_step), "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
 #endif
         //("source_addr", boost::program_options::value<std::string>()->default_value(source_addr), "IP address or hostname of the source.")
@@ -702,6 +702,7 @@ namespace p2psp {
 #endif /* __IMS__*/
     
 #if defined __NTS__
+# if not defined __monitor__
     // {{{
 
     if (vm.count("source_port_step")) {
@@ -711,6 +712,7 @@ namespace p2psp {
 	<< peer->GetPortStep());
 
     // }}}
+#endif
 #endif
 
     peer->ListenToTheTeam();
