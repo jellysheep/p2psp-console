@@ -708,7 +708,7 @@ namespace p2psp {
     if (vm.count("source_port_step")) {
       peer->SetPortStep(vm["source_port_step"].as<int>());
     }
-    LOG("Source port step ="
+    LOG("Source port step = "
 	<< peer->GetPortStep());
 
     // }}}
@@ -725,8 +725,8 @@ namespace p2psp {
     peer->ReceiveTheListOfPeers();
     std::cout << "done" << std::endl;
     TRACE("List of peers received");
-    LOG("Number of peers in the team (excluding me) ="
-	<< std::to_string(peer/*ptr*/->GetNumberOfPeers()));    
+    TRACE("Number of peers in the team (excluding me) = "
+	<< std::to_string(peer->GetNumberOfPeers()));    
     
     // }}}
 #endif    
@@ -803,6 +803,9 @@ namespace p2psp {
 	std::cout << to_simple_string(todayUtc);
       }
 
+      std::cout
+	<< " |";
+
       kbps_sendto = int(((peer->GetSendtoCounter() - last_sendto_counter) *
 			 peer->GetChunkSize() * 8) / 1000.0f);
       last_sendto_counter = peer->GetSendtoCounter();
@@ -838,8 +841,6 @@ namespace p2psp {
 #endif /* not defined __IMS__ */
     
       std::cout
-	<< " |";
-      std::cout
 	<< std::setw(9)
 	<< kbps_recvfrom
 	<< _RESET_COLOR();
@@ -850,6 +851,9 @@ namespace p2psp {
 	<< std::setw(9)
 	<< kbps_expected_recv;
 
+      std::cout
+	<< " |";
+
       if (kbps_expected_sent < kbps_sendto) {
 	std::cout <<_SET_COLOR(_GREEN);
       } else if (kbps_expected_sent > kbps_sendto) {
@@ -858,8 +862,6 @@ namespace p2psp {
 
 #endif /* not defined __IMS__ */
     
-      std::cout
-	<< " |";
       std::cout
 	<< std::setw(9)
 	<< kbps_sendto
@@ -901,7 +903,7 @@ namespace p2psp {
 	std::cout
 	  << std::setw(5)
 	  << /*ptr*/peer->GetPeerList()->size()
-	<< " |";
+	<< " | ";
 	counter = 0;
 	for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = /*ptr*/peer->GetPeerList()->begin();
 	     p != /*ptr*/peer->GetPeerList()->end();
