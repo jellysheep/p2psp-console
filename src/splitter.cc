@@ -298,7 +298,7 @@ int main(int argc, const char *argv[]) {
     // }}}
   }
 
-#if defined __DBS__
+#if not defined __IMS__
   
   // {{{
 
@@ -347,7 +347,7 @@ int main(int argc, const char *argv[]) {
   int kbps_sendto = 0;
   int kbps_recvfrom = 0;
   int chunks_recvfrom = 0;
-#if defined __DBS__
+#if not defined __IMS__
   std::vector<boost::asio::ip::udp::endpoint> peer_list;
 #endif
   
@@ -384,7 +384,7 @@ int main(int argc, const char *argv[]) {
     std::cout << " |";
 
     // O(_SET_COLOR(_CYAN));
-#if defined __DBS__
+#if not defined __IMS__
     peer_list = splitter.GetPeerList();
     //O("Size peer list: " << peer_list.size());
     
