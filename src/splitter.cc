@@ -116,7 +116,7 @@ int main(int argc, const char *argv[]) {
     std::string mcast_addr = splitter.GetDefaultMcastAddr();
     unsigned short mcast_port = splitter.GetDefaultMcastPort();
     int TTL = splitter.GetDefaultTTL();
-#elif defined __DBS__
+#else
     int max_number_of_chunk_loss = splitter.GetDefaultMaxNumberOfChunkLoss();
     int number_of_monitors = splitter.GetDefaultNumberOfMonitors();
 #endif
@@ -128,7 +128,7 @@ int main(int argc, const char *argv[]) {
       ("channel", boost::program_options::value<std::string>()->default_value(channel), "Name of the channel served by the streaming source.")
       ("chunk_size", boost::program_options::value<int>()->default_value(chunk_size), "Chunk size in bytes.")
       ("header_size", boost::program_options::value<int>()->default_value(header_size), "Length of the header of the stream in bytes.")
-#if defined __DBS__
+#if not defined __IMS__
       ("max_number_of_chunk_loss", boost::program_options::value<int>()->default_value(max_number_of_chunk_loss), "Maximum number of lost chunks for an unsupportive peer.")
       ("number_of_monitors", boost::program_options::value<int>()->default_value(number_of_monitors), "Number of monitors in the team. The first connecting peers will automatically become monitors.")
 #endif
@@ -142,28 +142,6 @@ int main(int argc, const char *argv[]) {
       ("TTL", boost::program_options::value<int>()->default_value(TTL), "Time To Live of the multicast messages.")
 #endif
       ("splitter_port", boost::program_options::value<int>()->default_value(splitter_port), "Port to serve the peers.");
-
-#ifdef _1_
-      (
-       "IMS", "Uses the IP multicast infrastructure, if available. IMS mode is incompatible with ACS, LRS, DIS and NTS modes.")
-      (
-       "NTS", "Enables NAT traversal.")
-      (
-       "ACS", "Enables Adaptative Chunk-rate.")
-      (
-       "LRS", "Enables Lost chunk Recovery")
-      (
-       "DIS", "Enables Data Integrity check.")
-      (
-       "strpe", "Selects STrPe model for DIS.")
-      (
-       "strpeds", "Selects STrPe-DS model for DIS.")
-      (
-       "strpeds_majority_decision", "Sets majority decision ratio for STrPe-DS model.")
-      (
-       "strpe_log", boost::program_options::value<std::string>(),
-       "Loggin STrPe & STrPe-DS specific data to file.")
-#endif
 
   boost::program_options::variables_map vm;
   try {
@@ -336,7 +314,7 @@ int main(int argc, const char *argv[]) {
   std::cout << "---------------------+----------+----------+" << std::endl;
 #else
   std::cout << "                     | Received |     Sent | Team | Team description" << std::endl;
-  std::cout << "                Time |   (kbps) |   (kbps) | size | (peer sent/lost)" << std::endl;
+  std::cout << "                Time |   (kbps) |   (kbps) | size | (peer lost/sent)" << std::endl;
   std::cout << "---------------------+----------+----------+------+------------------..." << std::endl;
 #endif
   
