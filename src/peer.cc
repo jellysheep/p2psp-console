@@ -482,7 +482,7 @@ namespace p2psp {
       // {{{
 
       peer->SetPlayerPort(vm["player_port"].as<uint16_t>());
-#if defined __DEBUG_PARAMS__
+#if defined __DEBUG__ || defined __PARAMS__
       TRACE("Player port = "
 	  << peer->GetPlayerPort());
 #endif
@@ -497,7 +497,7 @@ namespace p2psp {
       // {{{
 
       peer->SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
-#if defined __DEBUG_PARAMS__
+#if defined __DEBUG__ || defined __PARAMS__
       TRACE("Splitter address = "
 	    << peer->GetSplitterAddr());
 #endif
@@ -509,7 +509,7 @@ namespace p2psp {
       // {{{
       
       peer->SetSplitterPort(vm["splitter_port"].as<uint16_t>());
-#if defined __DEBUG_PARAMS__
+#if defined __DEBUG__ || defined __PARAMS__
       TRACE("Splitter port = "
 	  << peer->GetSplitterPort());
 #endif
@@ -518,7 +518,7 @@ namespace p2psp {
     }
     
     peer->ConnectToTheSplitter();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("Connected to the splitter");
 #endif
     /*std::cout
@@ -527,7 +527,7 @@ namespace p2psp {
       << std::endl;*/
 
     peer->ReceiveSourceEndpoint();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("Source = ("
 	  << peer->GetSourceAddr()
 	  << ","
@@ -536,24 +536,24 @@ namespace p2psp {
 #endif
     
     peer->ConnectToTheSource();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("Connected to the source");
 #endif
     
     peer->ReceiveChannel();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("channel = "
 	  << peer->GetChannel());
 #endif
     
     peer->ReceiveHeaderSize();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("Header size = "
 	  << peer->GetHeaderSize());
 #endif
     
     peer->RequestHeader();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("Header requested");
 #endif
 
@@ -562,13 +562,13 @@ namespace p2psp {
     std::cout << "done" << std::endl;
     
     peer->ReceiveChunkSize();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("Chunk size = "
 	  << peer->GetChunkSize());
 #endif
     
     peer->ReceiveBufferSize();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("Buffer size = "
 	  << peer->GetBufferSize());
 #endif
@@ -577,7 +577,7 @@ namespace p2psp {
     // {{{
     
     peer->ReceiveMcastGroup();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("Using IP multicast group = ("
 	  << peer->GetMcastAddr().to_string()
 	  << ","
@@ -595,7 +595,7 @@ namespace p2psp {
       // {{{
       
       peer->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
-#if defined __DEBUG_PARAMS__
+#if defined __DEBUG__ || defined __PARAMS__
       TRACE("Maximum chunk debt = "
 	    << peer->GetMaxChunkDebt());
 #endif
@@ -608,7 +608,7 @@ namespace p2psp {
       // {{{
       
       peer->SetTeamPort(vm["team_port"].as<uint16_t>());
-#if defined __DEBUG_PARAMS__
+#if defined __DEBUG__ || defined __PARAMS__
       TRACE("team_port = "
 	    << peer->GetTeamPort());
 #endif
@@ -620,7 +620,7 @@ namespace p2psp {
       // {{{
       
       peer->SetUseLocalHost(true);
-#if defined __DEBUG_PARAMS__
+#if defined __DEBUG__ || defined __PARAMS__
       TRACE("use_localhost = "
 	    << peer->GetUseLocalHost());
 #endif
@@ -638,7 +638,7 @@ namespace p2psp {
     if (vm.count("source_port_step")) {
       peer->SetPortStep(vm["source_port_step"].as<int>());
     }
-#if defined __DEBUG_PARAMS__
+#if defined __DEBUG__ || defined __PARAMS__
     TRACE("Source port step = "
 	  << peer->GetPortStep());
 #endif
@@ -648,18 +648,18 @@ namespace p2psp {
 #endif
 
     peer->ListenToTheTeam();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("Listening to the team");
 #endif
     
 #if not defined __IMS__
     // {{{
     
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("Receiving the list of peers ... ");
 #endif
     peer->ReceiveTheListOfPeers();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     std::cout << "done" << std::endl;
     TRACE("List of peers received");
     TRACE("Number of peers in the team (excluding me) = "
@@ -670,7 +670,7 @@ namespace p2psp {
 #endif    
 
     peer->DisconnectFromTheSplitter();
-#if defined __DEBUG_CHURN__
+#if defined __DEBUG__ || defined __CHURN__
     TRACE("Recived the configuration from the splitter.");
     TRACE("Clossing the connection");
 #endif
