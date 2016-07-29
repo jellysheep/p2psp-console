@@ -458,7 +458,7 @@ namespace p2psp {
 #if defined __monitor__
     std::cout << "Using Monitor_LRS" << std::endl;
 #else
-    std::cout << "Using Peer_DBS" << std:endl;
+    std::cout << "Using Peer_DBS" << std::endl;
 #endif
 #endif /* __LRS__ */
     
