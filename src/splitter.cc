@@ -182,7 +182,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetBufferSize(vm["buffer_size"].as<int>());
-#if defined __DEBUG_PARAMS__
+#if defined __D__ || defined __D_PARAMS__
     TRACE("Buffer size = "
 	  << splitter.GetBufferSize());
 #endif
@@ -194,7 +194,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetChannel(vm["channel"].as<std::string>());
-#if defined __DEBUG_PARAMS__
+#if defined __D__ || defined __D_PARAMS__
     TRACE("Channel = "
 	  << splitter.GetChannel());
 #endif
@@ -206,7 +206,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetChunkSize(vm["chunk_size"].as<int>());
-#if defined __DEBUG_PARAMS__
+#if defined __D__ || defined __D_PARAMS__
     TRACE("Chunk size = "
 	  << splitter.GetChunkSize());
 #endif
@@ -218,7 +218,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetHeaderSize(vm["header_size"].as<int>());
-#if defined __DEBUG_PARAMS__
+#if defined __D__ || defined __D_PARAMS__
     TRACE("Header size = "
 	  << splitter.GetHeaderSize());
 #endif
@@ -234,7 +234,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetMcastAddr(vm["mcast_addr"].as<std::string>());
-#if defined __DEBUG_PARAMS__
+#if defined __D__ || defined __D_PARAMS__
     TRACE("IP multicast address = "
 	  << splitter.GetMcastAddr());
 #endif
@@ -246,7 +246,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetMcastPort(vm["mcast_port"].as<int>());
-#if defined __DEBUG_PARAMS__
+#if defined __D__ || defined __D_PARAMS__
     TRACE("IP multicast port = "
 	  << splitter.GetMcastPort());
 #endif
@@ -262,7 +262,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetSplitterPort(vm["splitter_port"].as<int>());
-#if defined __DEBUG_PARAMS__
+#if defined __D__|| defined __D_PARAMS__
     TRACE("Splitter port = "
 	  << splitter.GetSplitterPort());
 #endif
@@ -274,7 +274,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetSourceAddr(vm["source_addr"].as<std::string>());
-#if defined __DEBUG_PARAMS__
+#if defined __D__ || defined __D_PARAMS__
     TRACE("Source address = "
 	  << splitter.GetSourceAddr());
 #endif
@@ -286,7 +286,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetSourcePort(vm["source_port"].as<int>());
-#if defined __DEBUG_PARAMS__
+#if defined __D__ || defined __D_PARAMS__
     TRACE("Source port = "
 	  << splitter.GetSourcePort());
 #endif
@@ -302,7 +302,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetMaxNumberOfChunkLoss(vm["max_number_of_chunk_loss"].as<int>());
-#if defined __DEBUG_PARAMS__
+#if defined __D__ || defined __D_PARAMS__
     TRACE("Maximun number of lost chunks ="
 	  << splitter.GetMaxNumberOfChunkLoss());
 #endif
@@ -314,7 +314,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetNumberOfMonitors(vm["number_of_monitors"].as<int>());
-#if defined __DEBUG_PARAMS__
+#if defined __D__ | defined __D_PARAMS__
     TRACE("Number of monitors = "
 	  << splitter.GetNumberOfMonitors());
 #endif
@@ -326,6 +326,7 @@ int main(int argc, const char *argv[]) {
 
 #endif
 
+  splitter.Init();
   splitter.Start();
 
   std::cout << _RESET_COLOR();

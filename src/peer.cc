@@ -123,8 +123,9 @@ namespace p2psp {
       //header_size_ = GetDefaultHeaderSize();
       //channel_ = GetDefaultChannel();
       //SetGETMessage(channel_);
+#if defined __D__
       TRACE("Console initialized");
-
+#endif
       // }}}
     }
 
@@ -141,13 +142,13 @@ namespace p2psp {
       in_addr ip_raw = *(in_addr *)(raw_data);
       source.addr = ip::address::from_string(inet_ntoa(ip_raw));
       source.port = ntohs(*(short *)(raw_data + 4));
-      
+#if defined __D__
       TRACE("source_endpoint = ("
 	    << source.addr.to_string()
 	    << ","
 	    << std::to_string(source.port)
 	    << ")");
-
+#endif
       // }}}
     }
 
@@ -174,10 +175,10 @@ namespace p2psp {
       ss << "GET /" << channel_ << " HTTP/1.1\r\n"
 	 << "\r\n";
       GET_message_ = ss.str();
-
+#if defined __D__
       TRACE("GET_message = "
 	    << GET_message_);
-
+#endif
       ss.str("");
 
       // }}}
@@ -191,21 +192,20 @@ namespace p2psp {
 	read(splitter_socket_, boost::asio::buffer(message/*,2*/));
 	channel_size = ntohs(*(short *)(message.data()));
       }
-      
+#if defined __D__
       TRACE("channel_size = "
 	    << channel_size);
-
+#endif
       {
 	std::vector<char> messagex(channel_size);
 	boost::asio::read(splitter_socket_, boost::asio::buffer(messagex/*, channel_size*/));
       
 	channel_ = std::string(messagex.data(), channel_size);
       }
-      //channel_ = "BBB-143.ogv";
-      TRACE("length = "
-	    << channel_.length());
+#if defined __D__
       TRACE("channel = "
 	    << channel_);
+#endif
       SetGETMessage();
 
       // }}}
@@ -227,9 +227,10 @@ namespace p2psp {
       
       header_size_ = ntohs(*(short *)(buffer.c_array()));
       
+#if defined __D__
       TRACE("header_size (in bytes) = "
 	    << std::to_string(header_size_));
-
+#endif
       // }}}
     }
 
@@ -259,14 +260,14 @@ namespace p2psp {
 	source_socket_.close();
 	exit(-1);
       }
-      
+#if defined __D__      
       TRACE("Connected to the source at ("
 	    << this->source.addr.to_string()
 	    << ","
 	    << std::to_string(this->source.port)
 	    << ") from "
 	    << source_socket_.local_endpoint().address().to_string());
-
+#endif
       // }}}
     }
 
@@ -303,21 +304,21 @@ namespace p2psp {
       acceptor_.set_option(ip::tcp::acceptor::reuse_address(true));
       acceptor_.bind(endpoint);
       acceptor_.listen();
-
-      TRACE("Waiting for the player at ("
-	    << endpoint.address().to_string()
-	    << ","
-            << std::to_string(endpoint.port())
-            << ")");
-
+      std::cout
+	<< "Waiting for the player at ("
+	<< endpoint.address().to_string()
+	<< ","
+	<< std::to_string(endpoint.port())
+	<< ")"
+	<< std::endl;
       acceptor_.accept(player_socket_);
-
+#if defined __D__
       TRACE("Player connected. Player is ("
             << player_socket_.remote_endpoint().address().to_string()
 	    << ","
             << std::to_string(player_socket_.remote_endpoint().port())
 	    << ")");
-      
+#endif      
       // }}}
     }
 
@@ -372,20 +373,7 @@ namespace p2psp {
 
     // {{{ Argument Parsing
 
-    const char description[80] = "This is the peer node of a P2PSP team.\n"
-#ifdef _1_
-#if defined __IMS__
-      "Using IMS.\n"
-#elif defined __DBS__
-      "Using DBS.\n"
-#elif defined __ACS__
-      "Using ACS.\n"
-#elif defined __LRS__
-      "Using LRS.\n"
-#elif defined __NTS__
-      "Using NTS.\n"
-#endif
-#endif
+    const char description[80] = "This is a peer node of a P2PSP team.\n"
       "Parameters";
 
     boost::program_options::options_description desc(description);
@@ -482,7 +470,7 @@ namespace p2psp {
       // {{{
 
       peer->SetPlayerPort(vm["player_port"].as<uint16_t>());
-#if defined __DEBUG__ || defined __PARAMS__
+#if defined __D__
       TRACE("Player port = "
 	  << peer->GetPlayerPort());
 #endif
@@ -491,13 +479,15 @@ namespace p2psp {
     }
 
     peer->WaitForThePlayer();
-    TRACE("Player connected");
+    std::cout
+      << "Player connected"
+      << std::endl;
 
     if (vm.count("splitter_addr")) {
       // {{{
 
       peer->SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
-#if defined __DEBUG__ || defined __PARAMS__
+#if defined __D__
       TRACE("Splitter address = "
 	    << peer->GetSplitterAddr());
 #endif
@@ -509,7 +499,7 @@ namespace p2psp {
       // {{{
       
       peer->SetSplitterPort(vm["splitter_port"].as<uint16_t>());
-#if defined __DEBUG__ || defined __PARAMS__
+#if defined __D__
       TRACE("Splitter port = "
 	  << peer->GetSplitterPort());
 #endif
@@ -518,7 +508,7 @@ namespace p2psp {
     }
     
     peer->ConnectToTheSplitter();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("Connected to the splitter");
 #endif
     /*std::cout
@@ -527,7 +517,7 @@ namespace p2psp {
       << std::endl;*/
 
     peer->ReceiveSourceEndpoint();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("Source = ("
 	  << peer->GetSourceAddr()
 	  << ","
@@ -536,39 +526,39 @@ namespace p2psp {
 #endif
     
     peer->ConnectToTheSource();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("Connected to the source");
 #endif
     
     peer->ReceiveChannel();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("channel = "
 	  << peer->GetChannel());
 #endif
     
     peer->ReceiveHeaderSize();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("Header size = "
 	  << peer->GetHeaderSize());
 #endif
     
     peer->RequestHeader();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("Header requested");
 #endif
 
-    std::cout << "Relaying header ... " << std::flush;
+    std::cout << "Relaying the header from the source to the player ... " << std::flush;
     peer->RelayHeader();
     std::cout << "done" << std::endl;
     
     peer->ReceiveChunkSize();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("Chunk size = "
 	  << peer->GetChunkSize());
 #endif
     
     peer->ReceiveBufferSize();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("Buffer size = "
 	  << peer->GetBufferSize());
 #endif
@@ -577,7 +567,7 @@ namespace p2psp {
     // {{{
     
     peer->ReceiveMcastGroup();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("Using IP multicast group = ("
 	  << peer->GetMcastAddr().to_string()
 	  << ","
@@ -595,11 +585,10 @@ namespace p2psp {
       // {{{
       
       peer->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
-#if defined __DEBUG__ || defined __PARAMS__
+#if defined __D__
       TRACE("Maximum chunk debt = "
 	    << peer->GetMaxChunkDebt());
 #endif
-      //peer.reset(peer_dbs);
       
       // }}}
     }
@@ -608,7 +597,7 @@ namespace p2psp {
       // {{{
       
       peer->SetTeamPort(vm["team_port"].as<uint16_t>());
-#if defined __DEBUG__ || defined __PARAMS__
+#if defined __D__
       TRACE("team_port = "
 	    << peer->GetTeamPort());
 #endif
@@ -620,7 +609,7 @@ namespace p2psp {
       // {{{
       
       peer->SetUseLocalHost(true);
-#if defined __DEBUG__ || defined __PARAMS__
+#if defined __D__
       TRACE("use_localhost = "
 	    << peer->GetUseLocalHost());
 #endif
@@ -638,7 +627,7 @@ namespace p2psp {
     if (vm.count("source_port_step")) {
       peer->SetPortStep(vm["source_port_step"].as<int>());
     }
-#if defined __DEBUG__ || defined __PARAMS__
+#if defined __D__
     TRACE("Source port step = "
 	  << peer->GetPortStep());
 #endif
@@ -648,18 +637,18 @@ namespace p2psp {
 #endif
 
     peer->ListenToTheTeam();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("Listening to the team");
 #endif
     
 #if not defined __IMS__
     // {{{
     
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("Receiving the list of peers ... ");
 #endif
     peer->ReceiveTheListOfPeers();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     std::cout << "done" << std::endl;
     TRACE("List of peers received");
     TRACE("Number of peers in the team (excluding me) = "
@@ -669,15 +658,24 @@ namespace p2psp {
     // }}}
 #endif    
 
+    peer->SendReadyForReceivingChunks();
+    
     peer->DisconnectFromTheSplitter();
-#if defined __DEBUG__ || defined __CHURN__
+#if defined __D__
     TRACE("Recived the configuration from the splitter.");
     TRACE("Clossing the connection");
 #endif
     
-    std::cout << "Buffering ... " << std::flush;
+    std::cout
+      << "Buffering ... "
+      << std::endl << std::flush;
+    clock_t start_time = clock();
     peer->BufferData();
     std::cout << "done" << std::endl;
+    std::cout
+      << "Buffering time = "
+      << std::to_string((clock() - start_time) / (float)CLOCKS_PER_SEC)
+      << " seconds" << std::endl;
 
     peer->Start();
     //LOG("Peer running in a thread");
