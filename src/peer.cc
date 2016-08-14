@@ -464,8 +464,6 @@ namespace p2psp {
 
     // }}}
     
-    peer->Init();
-    
     if (vm.count("player_port")) {
       // {{{
 
@@ -636,6 +634,7 @@ namespace p2psp {
 #endif
 #endif
 
+    peer->Init();    
     peer->ListenToTheTeam();
 #if defined __D__
     TRACE("Listening to the team");
