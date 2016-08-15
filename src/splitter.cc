@@ -337,7 +337,7 @@ int main(int argc, const char *argv[]) {
   std::cout << "---------------------+----------+----------+" << std::endl;
 #else
   std::cout << "                     | Received |     Sent | Team | Team description" << std::endl;
-  std::cout << "                Time |   (kbps) |   (kbps) | size | (peer lost/sent)" << std::endl;
+  std::cout << "                Time |   (kbps) |   (kbps) | size | (peer chunks-lost/sent)" << std::endl;
   std::cout << "---------------------+----------+----------+------+------------------..." << std::endl;
 #endif
   
