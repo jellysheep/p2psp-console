@@ -19,6 +19,12 @@
 //#include <boost/format.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+#include <iostream>
+#include <chrono>
+//using namespace std;
+//using ns = chrono::nanoseconds;
+//using get_time = chrono::steady_clock;
+
 #include "common.h"
 #include "core/common.h"
 
@@ -322,11 +328,11 @@ namespace p2psp {
       // }}}
     }
 
-    bool PlayChunk(int chunk_number) {
+    bool PlayChunk(int chunk) {
       // {{{
 
       try {
-        write(player_socket_, buffer(chunks_[chunk_number % buffer_size_].data));
+        write(player_socket_, buffer(chunk_ptr[chunk % buffer_size_].data));
         return true;
       } catch (std::exception e) {
 	std::cout
@@ -667,15 +673,20 @@ namespace p2psp {
     
     std::cout
       << "Buffering ... "
-      << std::endl << std::flush;
-    clock_t start_time = clock();
-    peer->BufferData();
-    std::cout << "done" << std::endl;
-    std::cout
-      << "Buffering time = "
-      << std::to_string((clock() - start_time) / (float)CLOCKS_PER_SEC)
-      << " seconds" << std::endl;
-
+      << std::endl << std::flush; {
+      //time_t start_time = time(NULL);
+      std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+      //auto start = std::chrono::steady_clock::now();
+      peer->BufferData();
+      std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
+      /*auto duration = std::chrono::duration_cast<std::chrono::milliseconds> 
+	(std::chrono::steady_clock::now() - start);*/
+      std::cout << "done" << std::endl;
+      std::cout
+	<< "Buffering time = "
+	<< std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()/1000000.0
+	<< " seconds" << std::endl;
+    }
     peer->Start();
     //LOG("Peer running in a thread");
 
