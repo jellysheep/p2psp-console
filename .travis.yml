@@ -18,7 +18,7 @@ before_script:
 - git checkout iss111
 - ./make.py
 - cd ../p2psp-console
-- git branch iss12 
+- git checkout iss12 
 script: ./make.py
 notifications:
   slack:
