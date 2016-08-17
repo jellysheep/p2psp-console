@@ -14,8 +14,8 @@ before_script:
 #- mkdir build; cd build; cmake ../
 - cd ..
 - git clone https://github.com/P2PSP/core.git
-- git checkout iss111
 - cd core
+- git checkout iss111
 - ./make.py
 - cd ../p2psp-console
 - git branch iss12 
