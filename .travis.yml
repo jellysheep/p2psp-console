@@ -10,9 +10,14 @@ addons:
     packages:
     - libboost-all-dev
 before_script:
-- cd lib/p2psp; mkdir build; cd build; cmake ../; make -j2; cd ../../../
-- mkdir build; cd build; cmake ../
-script: make -j2
+#- cd lib/p2psp; mkdir build; cd build; cmake ../; make -j2; cd ../../../
+#- mkdir build; cd build; cmake ../
+- cd ..
+- git clone https://github.com/P2PSP/core.git
+- cd core
+- ./make.py
+- cd ../p2psp-console 
+script: ./make.py
 notifications:
   slack:
     secure: fulzxl8IpkCAHkEYxX/WPAZXtZO/lGNaFtfRLcsNtvzWrJHacvSFBFrxJ9ZSVkG7a/v15m35yOPwUtE+9/tor4a49vgQSAxjnNoXwatB4d9HhGMeOJVgUdcBIDQxREW+KWWtHRxlJmTGbsG5OJuupap9KGnctlip5+BYeNlvOodfw+muG7VcA5QjHfdRwRAoRhKONL9AQ8Wkm/vjqwn0RL2iPx2q6pMmy7TP68d/ioeLQR17/SCLrQpY5VB0/YbO1cr88oL31NCyHRh7aQ2zXo5Qcp/Y8XpCY7211is2vW6BkARYFbeDYL/uXseDCfyOqgKFaD3BWEx3bWNR1XxftZXJ05PPyfzUG0741Gf9BUQ/2wHgTmuIc65+REJZTjx6ajOaqbdWsKHmIZ4bKI8bYpTJYDw3fZbrm9yWL5oCBI3fowYNCtCtRGXlfPLn2YTnaobg6MhhDRkgfwbwDcwK5gBfSzM56+Vxl8MJI+zwfID6SnL5S5latHnHSg57/aLMzjNh8QPV+CsrWSl6M+OS6DfjsYiUQn4oLIkwfq9ecK6lrEKpr0ankp697Y4MDKQDqEgiXUY0QtY7C7KkkeaWyxVBW5Vo0yrSHBCxK155yQ9KxyNldvw+LyZt84QNGyCp5asAQAmg3I1DVJDcJhexJVaRlNOXPxQMuIObjLXXK+w=
