@@ -6,7 +6,14 @@ import sys
 #The Test Rationale is simple, check if all members of the team are sending/receiving chunks as they should
 # from every other member of the team, if yes than this mean the team is up and running correctly
 
+
+# Namespace addresses and ports of the team stored as a dictionary
+addresses = dict(pc1="192.168.56.4", pc2="192.168.56.5", nat1="192.168.56.6", splitter="192.168.57.6",
+                 monitor="192.168.57.7", nat1_pub="192.168.57.4", p2Port="41666", p1Port="41667", monitorPort="4555",
+                 splitterPort="4554")
+
 # check if splitter has right outputs, that it is sending chunks to monitor and both peers
+
 splitterFunctional = False
 with open("splitter.log") as f:
     monitor = False
@@ -17,15 +24,15 @@ with open("splitter.log") as f:
             splitterFunctional = True
             break
         if not monitor :
-            if "-> 192.168.57.7:4555" in line:
+            if "-> %(monitor)s:%(monitorPort)s" % addresses in line:
                 print "splitter sending chunks to monitor"
                 monitor = True
         if not peer1 :
-            if "-> 192.168.57.4:41667" in line:
+            if "-> %(nat1_pub)s:%(p1Port)s" % addresses in line:
                 print "splitter sending chunks to peer1"
                 peer1 = True
         if not peer2 :
-            if "-> 192.168.57.4:41666" in line:
+            if "-> %(nat1_pub)s:%(p2Port)s" % addresses in line:
                 print "splitter sending chunks to peer2"
                 peer2 = True
 
@@ -50,15 +57,15 @@ with open("monitor.log") as f:
             monitorFunctional = True
             break
         if not splitter :
-            if re.match( r'.+\(0.0.0.0,4555\)<-\d+-\(192.168.57.6,4554\).+', line, re.M|re.I):
+            if re.match( r'.+\(0.0.0.0,4555\)<-\d+-\(%(splitter)s,%(splitterPort)s\).+' %addresses, line, re.M|re.I):
                 print "monitor receiving chunks from splitter"
                 splitter = True
         if not peer1 :
-            if re.match( r'.+\(0.0.0.0,4555\)<-\d+-\(192.168.57.4,41667\).+', line, re.M|re.I):
+            if re.match( r'.+\(0.0.0.0,4555\)<-\d+-\(%(nat1_pub)s,%(p1Port)s\).+' %addresses, line, re.M|re.I):
                 print "monitor receiving chunks from peer1"
                 peer1 = True
         if not peer2 :
-            if re.match( r'.+\(0.0.0.0,4555\)<-\d+-\(192.168.57.4,41666\).+', line, re.M|re.I):
+            if re.match( r'.+\(0.0.0.0,4555\)<-\d+-\(%(nat1_pub)s,%(p2Port)s\).+'%addresses, line, re.M|re.I):
                 print "monitor receiving chunks from peer2"
                 peer2 = True
 
@@ -82,15 +89,18 @@ with open("peer1.log") as f:
             peer1Functional = True
             break
         if not splitter :
-            if re.match( r'.+\(0.0.0.0,41667\)<-\d+-\(192.168.57.6,4554\).+', line, re.M|re.I):
+            if re.match( r'.+\(0.0.0.0,41667\)<-\d+-\(%(splitter)s,%(splitterPort)s\).+' % addresses
+                    , line, re.M|re.I):
                 print "peer1 receiving chunks from splitter"
                 splitter = True
         if not monitor :
-            if re.match( r'.+\(0.0.0.0,41667\)<-\d+-\(192.168.57.7,4555\).+', line, re.M|re.I):
+            if re.match( r'.+\(0.0.0.0,41667\)<-\d+-\(%(monitor)s,%(monitorPort)s\).+' % addresses
+                    , line, re.M|re.I):
                 print "peer1 receiving chunks from monitor"
                 monitor = True
         if not peer2 :
-            if re.match( r'.+\(0.0.0.0,41667\)<-\d+-\(192.168.56.5,41666\).+', line, re.M|re.I):
+            if re.match( r'.+\(0.0.0.0,41667\)<-\d+-\(%(pc2)s,%(p2Port)s\).+' % addresses
+                    , line, re.M|re.I):
                 print "peer1 receiving chunks from peer2"
                 peer2 = True
 
@@ -114,15 +124,15 @@ with open("peer2.log") as f:
             peer2Functional = True
             break
         if not splitter :
-            if re.match( r'.+\(0.0.0.0,41666\)<-\d+-\(192.168.57.6,4554\).+', line, re.M|re.I):
+            if re.match( r'.+\(0.0.0.0,41666\)<-\d+-\(%(splitter)s,%(splitterPort)s\).+' %addresses, line, re.M|re.I):
                 print "peer2 receiving chunks from splitter"
                 splitter = True
         if not monitor :
-            if re.match( r'.+\(0.0.0.0,41666\)<-\d+-\(192.168.57.7,4555\).+', line, re.M|re.I):
+            if re.match( r'.+\(0.0.0.0,41666\)<-\d+-\(%(monitor)s,%(monitorPort)s\).+'%addresses, line, re.M|re.I):
                 print "peer2 receiving chunks from monitor"
                 monitor = True
         if not peer1 :
-            if re.match( r'.+\(0.0.0.0,41666\)<-\d+-\(192.168.56.4,41667\).+', line, re.M|re.I):
+            if re.match( r'.+\(0.0.0.0,41666\)<-\d+-\(%(pc1)s,%(p1Port)s\).+'%addresses, line, re.M|re.I):
                 print "peer2 receiving chunks from peer1"
                 peer1 = True
 
