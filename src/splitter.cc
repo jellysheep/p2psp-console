@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <memory>
+#include "../lib/p2psp/src/core/splitter_ems.h"
 #include "../lib/p2psp/src/core/splitter_ims.h"
 #include "../lib/p2psp/src/core/splitter_dbs.h"
 #include "../lib/p2psp/src/core/splitter_acs.h"
@@ -143,6 +144,8 @@ int main(int argc, const char *argv[]) {
       (
        "NTS", "Enables NAT traversal.")
       (
+       "EMS", "Enables Endpoint Masquerading.")
+      (
        "ACS", "Enables Adaptative Chunk-rate.")
       (
        "LRS", "Enables Lost chunk Recovery")
@@ -182,6 +185,8 @@ int main(int argc, const char *argv[]) {
   is_IMS_only = false;
   if (vm.count("strpe")) {
     //splitter_ptr.reset(new p2psp::SplitterSTRPE());
+  } else if (vm.count("EMS")) {
+    splitter_ptr.reset(new p2psp::SplitterEMS());
   } else if (vm.count("NTS")) {
     splitter_ptr.reset(new p2psp::SplitterNTS());
   } else if (vm.count("LRS")) {
@@ -192,7 +197,7 @@ int main(int argc, const char *argv[]) {
     is_IMS_only = true;
     splitter_ptr.reset(new p2psp::SplitterIMS());
   } else {
-    splitter_ptr.reset(new p2psp::SplitterDBS());
+    splitter_ptr.reset(new p2psp::SplitterEMS());
   }
 
   if (vm.count("buffer_size")) {

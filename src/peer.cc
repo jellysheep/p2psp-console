@@ -13,9 +13,11 @@
 #include <boost/program_options/variables_map.hpp>
 #include "../lib/p2psp/src/core/common.h"
 #include "../lib/p2psp/src/core/monitor_dbs.h"
+#include "../lib/p2psp/src/core/monitor_ems.h"
 #include "../lib/p2psp/src/core/monitor_lrs.h"
 #include "../lib/p2psp/src/core/monitor_nts.h"
 #include "../lib/p2psp/src/core/peer_dbs.h"
+#include "../lib/p2psp/src/core/peer_ems.h"
 #include "../lib/p2psp/src/core/peer_ims.h"
 #include "../lib/p2psp/src/core/peer_nts.h"
 #include "../lib/p2psp/src/core/peer_symsp.h"
@@ -158,13 +160,13 @@ namespace p2psp {
     if (vm.count("monitor")) {
       // Monitor enabled
       LOG("Monitor enabled.");
-      peer.reset(new p2psp::MonitorNTS());
+      peer.reset(new p2psp::MonitorEMS);
     } else {
       p2psp::PeerSYMSP* peer_ptr = new p2psp::PeerSYMSP();
       if (vm.count("source_port_step")) {
         peer_ptr->SetPortStep(vm["source_port_step"].as<int>());
       }
-      peer.reset(peer_ptr);
+      peer.reset(new p2psp::PeerEMS());
     }
     peer->Init();
 

@@ -36,7 +36,7 @@ bash $virtualnet/EMS_virtualnet_setup2.sh
 cvlc $video --sout "#duplicate{dst=standard{mux=ogg,dst=:$sourcePort/$channel,access=http}}" :sout-keep &
 
 
-xterm -e script -c "ip netns exec splitter $executables/splitter --source_addr $sourceAddr --source_port $sourcePort --team_port $splitterPort --channel $channel" $EMS_test/splitter.log &
+xterm -e script -c "ip netns exec splitter $executables/splitter --EMS --source_addr $sourceAddr --source_port $sourcePort --team_port $splitterPort --channel $channel" $EMS_test/splitter.log &
 
 xterm -e script -c "ip netns exec monitor $executables/peer --monitor --splitter_addr $splitter --splitter_port $splitterPort --player_port $playerPort --team_port $monitorPort" $EMS_test/monitor.log &
 
