@@ -61,4 +61,4 @@ bash $virtualnet/cleanup_EMS_virtualNet1.sh
 sleep 1
 
 cd $EMS_test/
-python $EMS_test/EMS_test1.py
+python EMS_test1.py
