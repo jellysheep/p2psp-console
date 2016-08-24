@@ -1,138 +1,403 @@
 //
-//  peer.cc
-//  P2PSP
+//  peer.cc -- Console version of a P2PSP peer
 //
 //  This code is distributed under the GNU General Public License (see
 //  THE_GENERAL_GNU_PUBLIC_LICENSE.txt for extending this information).
+//
 //  Copyright (C) 2016, the P2PSP team.
+//
 //  http://www.p2psp.org
 //
+//  This program waits for the connection of the player, retrieves the
+//  header from the source (and posiblely some stream), retrieves the
+//  team configuration from the splitter and finally, feeds the player
+//  with the chunks that gathers a peer.
+//
 
-#include <boost/format.hpp>
+// {{{ includes
+
+//#include <boost/format.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-#include "../lib/p2psp/src/core/common.h"
-#include "../lib/p2psp/src/core/monitor_dbs.h"
-#include "../lib/p2psp/src/core/monitor_lrs.h"
-#include "../lib/p2psp/src/core/monitor_nts.h"
-#include "../lib/p2psp/src/core/peer_dbs.h"
-#include "../lib/p2psp/src/core/peer_ims.h"
-#include "../lib/p2psp/src/core/peer_nts.h"
-#include "../lib/p2psp/src/core/peer_symsp.h"
-//#include "peer_strpeds.h"
-//#include "peer_strpeds_malicious.h"
-//#include "trusted_peer.h"
-//#include "malicious_peer.h"
-#include "../lib/p2psp/src/util/trace.h"
+#include <iostream>
+#include <chrono>
+//using namespace std;
+//using ns = chrono::nanoseconds;
+//using get_time = chrono::steady_clock;
+
+#include "common.h"
+#include "core/common.h"
+
+#if defined __IMS__
+#include "core/peer_ims.h"
+#endif   /* __IMS__ */
+
+#if defined __DBS__ || defined __ACS__
+#if defined __monitor__
+#include "core/monitor_dbs.h"    // Includes peer_dbs.h
+#else
+#include "core/peer_dbs.h"
+#endif   /* __monitor__ */
+#endif   /* __DBS__ || __ACS__ */
+
+#if defined __LRS__
+#if defined __monitor__
+#include "core/monitor_lrs.h"   // Includes monitor_dbs.h
+#else
+#include "core/peer_dbs.h"
+#endif   /* __monitor__ */
+#endif   /* __LRS__ */
+
+#if defined __NTS__
+#if defined __monitor__
+#include "core/monitor_nts.h"   // Includes Peer_NTS
+#else
+//#include "core/peer_nts.h"      // Includes peer_dbs.h
+#include "core/peer_symsp.h"    // Includes peer_nts.h, which includes peer_dbs.h
+#endif    /* __monitor__ */
+#endif    /* __NTS__ */
+
+#include "util/trace.h"
+
+// }}}
 
 namespace p2psp {
+  using namespace std;
+  using namespace boost;
+  
+  class Console:
 
-  class Player: public PeerIMS {
+#if defined __IMS__  
+    public Peer_IMS
+#endif
 
+#if defined __DBS__ || defined __ACS__
+#if defined __monitor__
+    public Monitor_DBS
+#else
+    public Peer_DBS
+#endif /* __monitor__ */
+#endif /* __DBS__ || __ACS__ */
+
+#if defined __LRS__
+#if defined __monitor__
+    public Monitor_LRS
+#else
+    public Peer_DBS
+#endif
+#endif /* __LRS__ */
+  
+#if defined __NTS__
+#if defined __monitor__
+    public Monitor_NTS
+#else
+    public Peer_SYMSP
+#endif /* __monitor__ */
+#endif /* __NTS__ */
+
+  {
+    //  class Console: public Peer_core {
+    // {{{
+  protected:
+    // {{{
+    
+    struct Source {
+      ip::address addr;
+      PORT_TYPE port;
+    };
+    
+    PORT_TYPE player_port_;
+    io_service io_service_;
+    ip::tcp::acceptor acceptor_;
+    ip::tcp::socket source_socket_;
+    ip::tcp::socket player_socket_;
+    HEADER_SIZE_TYPE header_size_;
+    struct Source source;
+    std::string GET_message_;
+    std::string channel_;
+
+    // }}}
+  public:
+    // {{{
+    
+    Console() : io_service_(),
+		acceptor_(io_service_),
+		source_socket_(io_service_),
+		player_socket_(io_service_) {
+      // {{{
+
+      //header_size_ = GetDefaultHeaderSize();
+      //channel_ = GetDefaultChannel();
+      //SetGETMessage(channel_);
+      TRACE("Console initialized");
+      // }}}
+    }
+
+    ~Console() {}
+
+    void ReceiveSourceEndpoint() {
+      // {{{
+
+      boost::array<char, 6> buffer;
+      read(splitter_socket_, ::buffer(buffer));
+      
+      char *raw_data = buffer.data();
+      
+      in_addr ip_raw = *(in_addr *)(raw_data);
+      source.addr = ip::address::from_string(inet_ntoa(ip_raw));
+      source.port = ntohs(*(short *)(raw_data + 4));
+      TRACE("source_endpoint = ("
+	    << source.addr.to_string()
+	    << ","
+	    << std::to_string(source.port)
+	    << ")");
+      // }}}
+    }
+
+    ip::address GetSourceAddr() {
+      // {{{
+      
+      return source.addr;
+
+      // }}}
+    }
+    
+    PORT_TYPE GetSourcePort() {
+      // {{{
+      
+      return source.port;
+
+      // }}}
+    }
+
+    void SetGETMessage() {
+      // {{{
+      
+      std::stringstream ss;
+      ss << "GET /" << channel_ << " HTTP/1.1\r\n"
+	 << "\r\n";
+      GET_message_ = ss.str();
+      TRACE("GET_message = "
+	    << GET_message_);
+      ss.str("");
+
+      // }}}
+    }
+
+    void ReceiveChannel() {
+      // {{{
+
+      unsigned short channel_size; {
+	std::vector<char> message(2);
+	read(splitter_socket_, boost::asio::buffer(message/*,2*/));
+	channel_size = ntohs(*(short *)(message.data()));
+      }
+      TRACE("channel_size = "
+	    << channel_size);
+      {
+	std::vector<char> messagex(channel_size);
+	boost::asio::read(splitter_socket_, boost::asio::buffer(messagex/*, channel_size*/));
+      
+	channel_ = std::string(messagex.data(), channel_size);
+      }
+      TRACE("channel = "
+	    << channel_);
+      SetGETMessage();
+
+      // }}}
+    }
+
+    std::string GetChannel() {
+      // {{{
+
+      return channel_;
+      
+      // }}}
+    }
+
+    void ReceiveHeaderSize() {
+      // {{{
+
+      boost::array<char, 2> buffer;
+      read(splitter_socket_, ::buffer(buffer));
+      
+      header_size_ = ntohs(*(short *)(buffer.c_array()));
+      
+      TRACE("header_size (in bytes) = "
+	    << std::to_string(header_size_));
+      // }}}
+    }
+
+    HEADER_SIZE_TYPE GetHeaderSize() {
+      // {{{
+      
+      return header_size_;
+
+      // }}}
+    }
+    
+    void ConnectToTheSource() throw(boost::system::system_error) {
+      // {{{
+
+      ip::tcp::endpoint source_ep(this->source.addr, this->source.port);
+      system::error_code ec;
+      source_socket_.connect(source_ep, ec);
+
+      if (ec) {
+	ERROR(ec.message());
+	ERROR(source_socket_.local_endpoint().address().to_string()
+	    << "\b: unable to connect to the source ("
+	    << source.addr
+	    << ", "
+	    << to_string(source.port)
+	    << ")");
+	source_socket_.close();
+	exit(-1);
+      }
+      TRACE("Connected to the source at ("
+	    << this->source.addr.to_string()
+	    << ","
+	    << std::to_string(this->source.port)
+	    << ") from "
+	    << source_socket_.local_endpoint().address().to_string());
+      // }}}
+    }
+
+    void RequestHeader() {
+      source_socket_.send(asio::buffer(GET_message_));      
+    }
+    
+    void RelayHeader() {
+      // {{{
+            
+      boost::array<char, 128> buf;
+      //boost::system::error_code error;
+      for(int header_load_counter_ = 0; header_load_counter_ < GetHeaderSize();) {
+
+	//size_t len = socket.read_some(boost::asio::buffer(buf), error);
+	size_t len = source_socket_.read_some(boost::asio::buffer(buf));
+	header_load_counter_ += len;
+
+	if (len <= 0) break;
+
+	player_socket_.send(boost::asio::buffer(buf,len));
+	//boost::asio::write(socket, boost::asio::buffer(message), ignored_error);
+      }
+      
+      // }}}
+    }
+    
     void WaitForThePlayer() {
-      std::string port = std::to_string(player_port_);
+      // {{{
+      
       ip::tcp::endpoint endpoint(ip::tcp::v4(), player_port_);
 
       acceptor_.open(endpoint.protocol());
       acceptor_.set_option(ip::tcp::acceptor::reuse_address(true));
       acceptor_.bind(endpoint);
       acceptor_.listen();
-
-      TRACE("Waiting for the player at (" << endpoint.address().to_string() << ","
-            << std::to_string(endpoint.port())
-            << ")");
+      std::cout
+	<< "Waiting for the player at ("
+	<< endpoint.address().to_string()
+	<< ","
+	<< std::to_string(endpoint.port())
+	<< ")"
+	<< std::endl;
       acceptor_.accept(player_socket_);
-
-      TRACE("The player is ("
-            << player_socket_.remote_endpoint().address().to_string() << ","
-            << std::to_string(player_socket_.remote_endpoint().port()) << ")");
+      TRACE("Player connected. Player is ("
+            << player_socket_.remote_endpoint().address().to_string()
+	    << ","
+            << std::to_string(player_socket_.remote_endpoint().port())
+	    << ")");
+      // }}}
     }
 
-    void PlayChunk(int chunk) {
+    bool PlayChunk(int chunk) {
+      // {{{
+
       try {
-        write(player_socket_, buffer(chunks_[chunk % buffer_size_].data));
+        write(player_socket_, buffer(chunk_ptr[chunk % buffer_size_].data));
+        return true;
       } catch (std::exception e) {
-        TRACE("Player disconnected!");
-        player_alive_ = false;
+	std::cout
+	  << "Player disconnected"
+	  << std::endl;
+	//std::cout << e.what() << std::endl;
+        //player_alive_ = false;
+	return false;
+	//return true;
       }
+
+      // }}}
+    }
+    
+    void SetPlayerPort(uint16_t player_port) {
+      // {{{
+      
+      player_port_ = player_port;
+      
+      // }}}
     }
 
+    uint16_t GetPlayerPort() {
+      // {{{
+      
+      return  player_port_;
+      
+      // }}}
+    }
+      
+    static uint16_t GetDefaultPlayerPort() {
+      // {{{
+
+      return 9999;
+
+      // }}}
+    }
+
+    // }}}
   };
-
+  
   int run(int argc, const char* argv[]) throw(boost::system::system_error) {
-    // TODO: Format default options
-    boost::format format("Defaut = %5i");
+    // {{{
 
-    // Argument Parser
-    boost::program_options::options_description
-      desc("This is the peer node of a P2PSP team.\n"
-           "Parameters");
+    // {{{ Argument Parsing
+
+    const char description[80] = "This is a peer node of a P2PSP team.\n"
+      "Parameters";
+
+    boost::program_options::options_description desc(description);
 
     {
 
-      uint16_t player_port = p2psp::PeerIMS::GetDefaultPlayerPort();
-
-      std::string splitter_addr = p2psp::PeerIMS::GetDefaultSplitterAddr().to_string();
-      uint16_t splitter_port = p2psp::PeerIMS::GetDefaultSplitterPort();
-
-      int max_chunk_debt = p2psp::PeerDBS::GetDefaultMaxChunkDebt();
-      uint16_t team_port = p2psp::PeerDBS::GetDefaultTeamPort();
-
+      uint16_t player_port = Console::GetDefaultPlayerPort();
+      std::string splitter_addr = p2psp::Peer_core::GetDefaultSplitterAddr().to_string();
+      uint16_t splitter_port = p2psp::Peer_core::GetDefaultSplitterPort();
+#if not defined __IMS__
+      int max_chunk_debt = p2psp::Peer_DBS::GetDefaultMaxChunkDebt();
+      uint16_t team_port = p2psp::Peer_core::GetDefaultTeamPort();
+#endif
+#if defined __NTS__ && not defined __monitor__
       int source_port_step = 0;
+#endif
 
       // TODO: strpe option should expect a list of arguments, not bool
       desc.add_options()
         ("help,h", "Produce this help message and exits.")
-        ("enable_chunk_loss",
-         boost::program_options::value<std::string>(),
-         "Forces a lost of chunks.")
-        ("max_chunk_debt",
-         boost::program_options::value<int>()->default_value(max_chunk_debt),
-         "Maximum number of times that other peer can not send a chunk to this peer.")
-        ("player_port",
-         boost::program_options::value<uint16_t>()->default_value(player_port),
-         "Port to communicate with the player.")
-        ("source_port_step",
-         boost::program_options::value<int>()->default_value(source_port_step),
-         "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
-        ("splitter_addr",
-         boost::program_options::value<std::string>()->default_value(splitter_addr),
-         "IP address or hostname of the splitter.")
-        ("splitter_port",
-         boost::program_options::value<uint16_t>()->default_value(splitter_port),
-         "Listening port of the splitter.")
-        ("team_port",
-         boost::program_options::value<uint16_t>()->default_value(team_port),
-         "Port to communicate with the peers. By default the OS will chose it.")
-        ("use_localhost",
-         "Forces the peer to use localhost instead of the IP of the adapter to connect to the splitter."
-         "Notice that in this case, peers that run outside of the host will not be able to communicate with this peer.")
-        //"malicious",
-        // boost::program_options::value<bool>()->implicit_value(true),
-        //"Enables the malicious activity for peer.")(
-        //("persistent",
-        // boost::program_options::value<std::string>()->default_value(persistent),
-        // "Forces the peer to send poisoned chunks to other peers.")
-        //("on_off_ratio",
-        // boost::program_options::value<int>()->default_value(on_off_ratio),
-        // "Enables on-off attack and sets ratio for on off (from 1 to 100).")
-        //("selective",
-        // boost::program_options::value<std::string>()->default_value(selective),
-        // "Enables selective attack for given set of peers.")
-        //("bad_mouth",
-        // boost::program_options::value<std::string>()->default_value(bad_mouth),
-        // "Enables Bad Mouth attack for given set of peers.")
-        // "trusted", boost::program_options::value<bool>()->implicit_value(true),
-        // "Forces the peer to send hashes of chunks to splitter")(
-        //("checkall",
-        // "Forces the peer to send hashes of every chunks to splitter (works only with trusted option)")
-        // "strpeds", boost::program_options::value<bool>()->implicit_value(true),
-        // "Enables STrPe-DS")(
-        //("strpe_log", "Logging STrPe & STrPe-DS specific data to file.")
-        ("monitor",
-         "The peer is a monitor")
-        ("show_buffer",
-         "Shows the status of the buffer of chunks.");
+#if not defined __IMS__
+        ("max_chunk_debt", boost::program_options::value<int>()->default_value(max_chunk_debt), "Maximum number of times that other peer can not send a chunk to this peer.")
+#endif
+        ("player_port", boost::program_options::value<uint16_t>()->default_value(player_port), "Port to communicate with the player.")
+#if defined __NTS__ && not defined __monitor__
+        ("source_port_step", boost::program_options::value<int>()->default_value(source_port_step), "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
+#endif
+        ("splitter_addr", boost::program_options::value<std::string>()->default_value(splitter_addr), "IP address or hostname of the splitter.")
+        ("splitter_port", boost::program_options::value<uint16_t>()->default_value(splitter_port), "Listening port of the splitter.")
+#if not defined __IMS__
+        ("team_port", boost::program_options::value<uint16_t>()->default_value(team_port), "Port to communicate with the peers. By default the OS will chose it.")
+        ("use_localhost", "Forces the peer to use localhost instead of the IP of the adapter to connect to the splitter." "Notice that in this case, peers that run outside of the host will not be able to communicate with this peer.")
+#endif
+	;
 
     }
 
@@ -153,249 +418,379 @@ namespace p2psp {
       return 1;
     }
 
-    std::unique_ptr<p2psp::PeerDBS> peer;
+    // }}}
 
-    if (vm.count("monitor")) {
-      // Monitor enabled
-      LOG("Monitor enabled.");
-      peer.reset(new p2psp::MonitorNTS());
-    } else {
-      p2psp::PeerSYMSP* peer_ptr = new p2psp::PeerSYMSP();
-      if (vm.count("source_port_step")) {
-        peer_ptr->SetPortStep(vm["source_port_step"].as<int>());
-      }
-      peer.reset(peer_ptr);
-    }
-    peer->Init();
+#if defined __IMS__
+    std::cout << "Using Peer_IMS" << std::endl;
+#endif
+    
+#if defined __DBS__ || defined __ACS__
+#if defined __monitor__
+    std::cout << "Using Monitor_DBS" << std::endl;
+#else
+    std::cout << "Using Peer_DBS" << std::endl;
+#endif /* __monitor__ */
+#endif /* __DBS__ || __ACS__ */
 
-    if (vm.count("show_buffer")) {
-      peer->SetShowBuffer(true);
-    }
+#if defined __LRS__
+#if defined __monitor__
+    std::cout << "Using Monitor_LRS" << std::endl;
+#else
+    std::cout << "Using Peer_DBS" << std::endl;
+#endif
+#endif /* __LRS__ */
+    
+#if defined __NTS__
+#if defined __monitor__
+    std::cout << "Using Monitor_NTS" << std::endl;
+#else
+    std::cout << "Using Peer_NTS" << std::endl;
+#endif /* __monitor__ */
+#endif /* __NTS__ */
 
-    if (vm.count("max_chunk_debt")) {
-      peer->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
-    }
+    // {{{ Peer instantiation
+    
+    class Console* peer = new Console();
 
+    // }}}
+    
     if (vm.count("player_port")) {
+      // {{{
+
       peer->SetPlayerPort(vm["player_port"].as<uint16_t>());
+      TRACE("Player port = "
+	  << peer->GetPlayerPort());
+      
+      // }}}
     }
+
+    peer->WaitForThePlayer();
+    std::cout
+      << "Player connected"
+      << std::endl;
 
     if (vm.count("splitter_addr")) {
-      //std::string x =
-        peer->SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
-      //peer->SetSplitterAddr(vm["splitter_addr"].as<ip::address>());
+      // {{{
+
+      peer->SetSplitterAddr(ip::address::from_string(vm["splitter_addr"].as<std::string>()));
+      TRACE("Splitter address = "
+	    << peer->GetSplitterAddr());
+      
+      // }}}
     }
 
     if (vm.count("splitter_port")) {
+      // {{{
+      
       peer->SetSplitterPort(vm["splitter_port"].as<uint16_t>());
+      TRACE("Splitter port = "
+	  << peer->GetSplitterPort());
+      
+      // }}}
+    }
+    
+    peer->ConnectToTheSplitter();
+    TRACE("Connected to the splitter");
+    /*std::cout
+      << "Real splitter port = "
+      << peer->GetRealSplitterPort()
+      << std::endl;*/
+
+    peer->ReceiveSourceEndpoint();
+    TRACE("Source = ("
+	  << peer->GetSourceAddr()
+	  << ","
+	  << std::to_string(peer->GetSourcePort())
+	  << ")");
+    
+    peer->ConnectToTheSource();
+    TRACE("Connected to the source");
+    
+    peer->ReceiveChannel();
+    TRACE("channel = "
+	  << peer->GetChannel());
+    
+    peer->ReceiveHeaderSize();
+    TRACE("Header size = "
+	  << peer->GetHeaderSize());
+    
+    peer->RequestHeader();
+    TRACE("Header requested");
+
+    std::cout << "Relaying the header from the source to the player ... " << std::flush;
+    peer->RelayHeader();
+    std::cout << "done" << std::endl;
+    
+    peer->ReceiveChunkSize();
+    TRACE("Chunk size = "
+	  << peer->GetChunkSize());
+    
+    peer->ReceiveBufferSize();
+    TRACE("Buffer size = "
+	  << peer->GetBufferSize());
+    
+#if defined __IMS__
+    // {{{
+    
+    peer->ReceiveMcastGroup();
+    TRACE("Using IP multicast group = ("
+	  << peer->GetMcastAddr().to_string()
+	  << ","
+	  << peer->GetMcastPort()
+	  << ")");
+    
+    // }}}
+
+#else /* __IMS__ */
+    
+    // {{{
+
+    if (vm.count("max_chunk_debt")) {
+      // {{{
+      
+      peer->SetMaxChunkDebt(vm["max_chunk_debt"].as<int>());
+      TRACE("Maximum chunk debt = "
+	    << peer->GetMaxChunkDebt());
+      
+      // }}}
     }
 
     if (vm.count("team_port")) {
+      // {{{
+      
       peer->SetTeamPort(vm["team_port"].as<uint16_t>());
+      TRACE("team_port = "
+	    << peer->GetTeamPort());
+      
+      // }}}
     }
 
     if (vm.count("use_localhost")) {
-      peer->SetUseLocalhost(true);
+      // {{{
+      
+      peer->SetUseLocalHost(true);
+      TRACE("use_localhost = "
+	    << peer->GetUseLocalHost());
+      
+      // }}}
     }
 
-    // TODO: To the future
-    /*
-      if (vm.count("persistent")) {
-      peer->SetPersistentAttack(true);
-      }
+    // }}}
+#endif /* __IMS__*/
+    
+#if defined __NTS__
+# if not defined __monitor__
+    // {{{
 
-      if (vm.count("on_off_ratio")) {
-      peer->SetOnOffAttack(true, vm["on_off_ratio"].as<int>());
-      }
-
-      if (vm.count("selective")) {
-      peer->SetSelectiveAttack(true, vm["selective"].as<std::string>());
-      }
-
-      if (vm.count("bad_mouth")) {
-      peer->SetBadMouthAttack(true, vm["bad_mouth"].as<std::string>());
-      }
-
-      if (vm.count("checkall")) {
-      peer->SetCheckAll(true);
-      }
-
-      if (vm.count("strpe_log")) {
-      // TODO: Handle logging
-      }*/
-
-    peer->WaitForThePlayer();
-    peer->ConnectToTheSplitter();
-    peer->ReceiveTheMcastEndpoint();
-    peer->ReceiveTheHeaderSize();
-    peer->ReceiveTheChunkSize();
-    peer->ReceiveTheHeader();
-    peer->ReceiveTheBufferSize();
-    LOG("Using IP Multicast address = " << peer->GetMcastAddr().to_string());
-
-    // A multicast address is always received, even for DBS peers.
-    if (peer->GetMcastAddr().to_string() == "0.0.0.0") {
-      peer->ReceiveMyEndpoint();
-      peer->ReceiveMagicFlags();
-      // LOG("Magic flags =" << std::bitset<8>(peer->magic_flags));
-      peer->ReceiveTheNumberOfPeers();
-      LOG("Number of peers in the team (excluding me) ="
-          << std::to_string(peer->GetNumberOfPeers()));
-      LOG("Am I a monitor peer? =" << (peer->AmIAMonitor() ? "True" : "False"));
-      peer->ListenToTheTeam();
-      peer->ReceiveTheListOfPeers();
-      LOG("List of peers received");
-
-      // After receiving the list of peers, the peer can check whether is a
-      // monitor peer or not (only the first arriving peers are monitors)
-
-      if (peer->AmIAMonitor()) {
-        LOG("Monitor DBS enabled");
-
-        // The peer is a monitor. Now it's time to know the sets of rules that
-        // control this team.
-      } else {
-        LOG("Peer DBS enabled");
-
-        // The peer is a normal peer-> Let's know the sets of rules that control
-        // this team.
-      }
-
-    } else {
-      // IP multicast mode
-      peer->ListenToTheTeam();
+    if (vm.count("source_port_step")) {
+      peer->SetPortStep(vm["source_port_step"].as<int>());
     }
+    TRACE("Source port step = "
+	  << peer->GetPortStep());
+    
+    // }}}
+#endif
+#endif
 
+    peer->Init();    
+    peer->ListenToTheTeam();
+    TRACE("Listening to the team");
+    
+#if not defined __IMS__
+    // {{{
+    
+    TRACE("Receiving the list of peers ... ");
+    peer->ReceiveTheListOfPeers();
+    std::cout << "done" << std::endl;
+    TRACE("List of peers received");
+    TRACE("Number of peers in the team (excluding me) = "
+	<< std::to_string(peer->GetNumberOfPeers()));    
+    
+    // }}}
+#endif    
+
+    peer->SendReadyForReceivingChunks();
+    
     peer->DisconnectFromTheSplitter();
-    peer->BufferData();
+    TRACE("Recived the configuration from the splitter.");
+    TRACE("Clossing the connection");
+    
+    std::cout
+      << "Buffering ... "
+      << std::endl << std::flush; {
+      //time_t start_time = time(NULL);
+      std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+      //auto start = std::chrono::steady_clock::now();
+      peer->BufferData();
+      std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
+      /*auto duration = std::chrono::duration_cast<std::chrono::milliseconds> 
+	(std::chrono::steady_clock::now() - start);*/
+      std::cout << "done" << std::endl;
+      std::cout
+	<< "Buffering time = "
+	<< std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()/1000000.0
+	<< " seconds" << std::endl;
+    }
     peer->Start();
+    //LOG("Peer running in a thread");
 
-    LOG("+-----------------------------------------------------+");
-    LOG("| Received = Received kbps, including retransmissions |");
-    LOG("|     Sent = Sent kbps                                |");
-    LOG("|       (Expected values are between parenthesis)     |");
-    LOG("------------------------------------------------------+");
-    LOG("");
-    LOG("         |     Received (kbps) |          Sent (kbps) |");
-    LOG(
-        "    Time |      Real  Expected |       Real  Expected | Team "
-        "description");
-    LOG(
-        "---------+---------------------+----------------------+-----------------"
-        "------------------...");
+    std::cout << _RESET_COLOR();
+
+#if defined __IMS__
+    
+    std::cout << "                     | Received |     Sent |" << std::endl;
+    std::cout << "                Time |   (kbps) |   (kbps) |" << std::endl;
+    std::cout << "---------------------+----------+----------+" << std::endl;
+
+#else
+
+    std::cout << std::endl;
+    std::cout << "                     | Received Expected |     Sent Expected | Team |" << std::endl;
+    std::cout << "                Time |   (kbps)   (kbps) |   (kbps)   (kbps) | size | Peer list" << std::endl;
+    std::cout << "---------------------+-------------------+-------------------+------+----------..." << std::endl;
+
+#endif
+    
+    int kbps_recvfrom = 0;
+    int kbps_sendto = 0;
+    int last_sendto_counter = -1;
+    int last_recvfrom_counter = peer->GetRecvfromCounter();
+    
+#if not defined __IMS__
 
     int last_chunk_number = peer->GetPlayedChunk();
-    int last_sendto_counter = -1;
+    int kbps_expected_recv = 0;
     if (peer->GetSendtoCounter() < 0) {
       last_sendto_counter = 0;
     } else {
       //peer->SetSendtoCounter(0);
       last_sendto_counter = 0;
     }
-
-    int last_recvfrom_counter = peer->GetRecvfromCounter();
-    float kbps_expected_recv = 0.0f;
-    float kbps_recvfrom = 0.0f;
     float team_ratio = 0.0f;
-    float kbps_sendto = 0.0f;
-    float kbps_expected_sent = 0.0f;
-    // float nice = 0.0f;
+    int kbps_expected_sent = 0;
     int counter = 0;
+
+#endif
 
     while (peer->IsPlayerAlive()) {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
-      kbps_expected_recv = ((peer->GetPlayedChunk() - last_chunk_number) *
-                            peer->GetChunkSize() * 8) / 1000.0f;
-      last_chunk_number = peer->GetPlayedChunk();
-      kbps_recvfrom = ((peer->GetRecvfromCounter() - last_recvfrom_counter) *
-                       peer->GetChunkSize() * 8) / 1000.0f;
-      last_recvfrom_counter = peer->GetRecvfromCounter();
-      team_ratio = peer->GetPeerList()->size() / (peer->GetPeerList()->size() + 1.0f);
-      kbps_expected_sent = (int)(kbps_expected_recv * team_ratio);
-      kbps_sendto = ((peer->GetSendtoCounter() - last_sendto_counter) *
-                     peer->GetChunkSize() * 8) / 1000.0f;
+
+      { /* Print current time */
+	using boost::posix_time::ptime;
+	using boost::posix_time::second_clock;
+	using boost::posix_time::to_simple_string;
+	using boost::gregorian::day_clock;
+	ptime todayUtc(day_clock::universal_day(), second_clock::universal_time().time_of_day());
+	std::cout << to_simple_string(todayUtc);
+      }
+
+      std::cout
+	<< " |";
+
+      kbps_sendto = int(((peer->GetSendtoCounter() - last_sendto_counter) *
+			 peer->GetChunkSize() * 8) / 1000.0f);
       last_sendto_counter = peer->GetSendtoCounter();
+      kbps_recvfrom = int(((peer->GetRecvfromCounter() - last_recvfrom_counter) *
+			   peer->GetChunkSize() * 8) / 1000.0f);
+      last_recvfrom_counter = peer->GetRecvfromCounter();
 
-      // try:
-      if (p2psp::Common::kConsoleMode == false) {
-        /*from gi.repository import GObject
-          try:
-          from adapter import speed_adapter
-          except ImportError as msg:
-          pass
-          GObject.idle_add(speed_adapter.update_widget,str(kbps_recvfrom) << ' kbps'
-          ,str(kbps_sendto) << ' kbps'
-          ,str(len(peer->peer_list)+1))
-          except Exception as msg:
-          pass*/
+#if not defined __IMS__
+
+      kbps_expected_recv = int(((peer->GetPlayedChunk() - last_chunk_number) *
+				peer->GetChunkSize() * 8) / 1000.0f);
+      last_chunk_number = peer->GetPlayedChunk();
+      {
+	team_ratio = peer->GetPeerList()->size() / (peer->GetPeerList()->size() + 1.0f);
       }
-
-      if (kbps_recvfrom > 0 and kbps_expected_recv > 0) {
-        // nice = 100.0 / (kbps_expected_recv / kbps_recvfrom) *
-        // (peer->GetPeerList()->size() + 1.0f);
-      } else {
-        // nice = 0.0f;
-      }
-
-      LOG("|");
+      kbps_expected_sent = (int)(kbps_expected_recv * team_ratio);
 
       if (kbps_expected_recv < kbps_recvfrom) {
-        LOG(_SET_COLOR(_RED));
+	std::cout <<_SET_COLOR(_GREEN);
       } else if (kbps_expected_recv > kbps_recvfrom) {
-        LOG(_SET_COLOR(_GREEN));
+	std::cout << _SET_COLOR(_RED);
       }
 
-      // TODO: format
-      LOG(kbps_expected_recv);
-      LOG(kbps_recvfrom);
-      //#print(("{:.1f}".format(nice)).rjust(6), end=' | ')
-      //#sys.stdout.write(Color.none)
+#endif /* not defined __IMS__ */
+    
+      std::cout
+	<< std::setw(9)
+	<< kbps_recvfrom
+	<< _RESET_COLOR();
 
-      if (kbps_expected_sent > kbps_sendto) {
-        LOG(_SET_COLOR(_RED));
-      } else if (kbps_expected_sent < kbps_sendto) {
-        LOG(_SET_COLOR(_GREEN));
-      }
-      // TODO: format
-      LOG(kbps_sendto);
-      LOG(kbps_expected_sent);
-      // sys.stdout.write(Color.none)
-      // print(repr(nice).ljust(1)[:6], end=' ')
-      LOG(peer->GetPeerList()->size());
-      counter = 0;
-      for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = peer->GetPeerList()->begin(); p != peer->GetPeerList()->end(); ++p) {
-        if (counter < 5) {
-          LOG("(" << p->address().to_string() << "," << std::to_string(p->port())
-              << ")");
-          counter++;
-        } else {
-          break;
-          LOG("");
-        }
+#if not defined __IMS__
+    
+      std::cout
+	<< std::setw(9)
+	<< kbps_expected_recv;
+
+      std::cout
+	<< " |";
+
+      if (kbps_expected_sent < kbps_sendto) {
+	std::cout <<_SET_COLOR(_GREEN);
+      } else if (kbps_expected_sent > kbps_sendto) {
+	std::cout << _SET_COLOR(_RED);
       }
 
-      // try:
-      if (p2psp::Common::kConsoleMode == false) {
-        /*GObject.idle_add(speed_adapter.update_widget,str(0)+'
-          kbps',str(0)+' kbps',str(0))
-          except  Exception as msg:
-          pass
-          }
-        */
+#endif /* not defined __IMS__ */
+    
+      std::cout
+	<< std::setw(9)
+	<< kbps_sendto
+	<< _RESET_COLOR();
+	
+#if not defined __IMS__
+    
+      std::cout
+	<< std::setw(9)
+	<< kbps_expected_sent;
+      
+#endif /* not defined __IMS__ */
+    
+      std::cout << " |";
+    
+#ifndef __IMS__
+
+      {
+	std::cout
+	  << std::setw(5)
+	  << peer->GetPeerList()->size()
+	  << " | ";
+	counter = 0;
+	for (std::vector<boost::asio::ip::udp::endpoint>::iterator p = peer->GetPeerList()->begin();
+	     p != peer->GetPeerList()->end();
+	     ++p) {
+	  if (counter < 5) {
+	    std::cout << p->address().to_string()
+		      << ","
+		      << std::to_string(p->port())
+		      << " ";
+	    counter++;
+	  } else {
+	    break;
+	    std::cout << "";
+	  }
+	}
       }
+
+#endif
+      std::cout
+	<< std::endl;
     }
-
+    
     return 0;
   }
+
+    // }}}
 }
 
-
 int main(int argc, const char* argv[]) {
+  
   try {
     return p2psp::run(argc, argv);
   } catch (boost::system::system_error e) {
     TRACE(e.what());
   }
-
   return -1;
+  
 }

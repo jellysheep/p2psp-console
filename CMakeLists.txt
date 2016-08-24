@@ -2,6 +2,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 option(BUILD_PEER "Build the peer" ON)
+option(BUILD_MONITOR "Build the monitor" ON)
 option(BUILD_SPLITTER "Build the splitter" ON)
 
 option(BUILD_WITH_CLANG "Build using the Clang compiler" OFF)
@@ -38,7 +39,10 @@ find_package(OpenSSL REQUIRED)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
+set(P2PSP_INCLUDE_DIR ../core/src/)
+
 include_directories(
+  ${P2PSP_INCLUDE_DIR}
   ${Boost_INCLUDE_DIR}
   ${OPENSSL_INCLUDE_DIR}
 )
@@ -46,13 +50,17 @@ include_directories(
 link_directories(${Boost_LIBRARY_DIR})
 
 #Find P2PSP Library
-FIND_LIBRARY(P2PSP_LIBRARY p2psp lib/p2psp/bin/ lib/p2psp/src/core/)
+#FIND_LIBRARY(P2PSP_LIBRARY p2psp lib/p2psp/bin/ lib/p2psp/src/core/)
+FIND_LIBRARY(P2PSP_LIBRARY p2psp ../core/bin/ ../core/src/)
 
 # Initialize CXXFLAGS
 set(CMAKE_CXX_FLAGS                "-Wall -std=c++11")
 set(CMAKE_CXX_FLAGS_DEBUG          "-O0 -g")
-set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE        "-O4 -DNDEBUG")
+#set(CMAKE_CXX_FLAGS_DEBUG          "-O0 -g -D__D__ -D__D_CHURN__ -D__D_LOST_CHUNKS__")
+#set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os")
+set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os")
+#set(CMAKE_CXX_FLAGS_RELEASE        "-O4")
+set(CMAKE_CXX_FLAGS_RELEASE        "-O4")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 
 # Compiler-specific C++11 activation
@@ -84,6 +92,26 @@ if(BUILD_PEER)
   # Enable C++11 for CMake 3.1.0 or later
   set_property(TARGET peer PROPERTY CXX_STANDARD 11)
   set_property(TARGET peer PROPERTY CXX_STANDARD_REQUIRED ON)
+endif()
+
+if(BUILD_MONITOR)
+  # Executable
+  add_executable(monitor "src/peer.cc")
+
+  # Defines
+  #add_definitions(-D__monitor__)
+  target_compile_definitions(monitor PUBLIC __monitor__)
+
+  # Libraries
+  target_link_libraries(monitor
+    ${P2PSP_LIBRARY}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${Boost_LIBRARIES}
+  )
+
+  # Enable C++11 for CMake 3.1.0 or later
+  set_property(TARGET monitor PROPERTY CXX_STANDARD 11)
+  set_property(TARGET monitor PROPERTY CXX_STANDARD_REQUIRED ON)
 endif()
 
 if(BUILD_SPLITTER)
