@@ -2,8 +2,8 @@
 
 #This script needs to be ran as root
 #directories of key files, be sure to give full path
-video="/home/kevin/p2psp/Test/bin/Big_Buck_Bunny_small.ogv"
-executables="/home/kevin/p2psp/Test/bin"
+video="/home/kevin/p2psp/p2psp-console/bin/Big_Buck_Bunny_small.ogv"
+executables="/home/kevin/p2psp/p2psp-console/bin"
 virtualnet="/home/kevin/Desktop"
 EMS_test="/home/kevin/PycharmProjects/p2psptest"
 

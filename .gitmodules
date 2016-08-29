@@ -1,4 +1,0 @@
-[submodule "lib/p2psp"]
-	path = lib/p2psp
-	url = https://github.com/P2PSP/core.git
-	branch = master
