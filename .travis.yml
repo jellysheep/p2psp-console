@@ -15,10 +15,10 @@ before_script:
 - cd ..
 - git clone https://github.com/P2PSP/core.git
 - cd core
-- git checkout iss111
+#- git checkout iss111
 - ./make.py
 - cd ../p2psp-console
-- git checkout iss12 
+#- git checkout iss12 
 script: ./make.py
 notifications:
   slack:
