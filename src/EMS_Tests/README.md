@@ -15,8 +15,8 @@ After the virtual networks are set up, the two bash scripts ([run_EMS_test1.sh](
 Again the scripts must be run as root. Note to supply the correct full path the the test video file to be streamed, as well as the correct full path directories for the peer and splitter executables, the network setup scripts, and the python test scripts.
 These scripts will run the team and deposit the respective output logs from the splitter, monitor and peers to be read by 2 python scripts.
 
-The python scripts [EMS_test1.py](https://github.com/kshi219/p2psp-console/blob/master/src/EMS_Tests/EMS_test1.py), [EMS_test2.py](https://github.com/kshi219/p2psp-console/blob/master/src/EMS_Tests/EMS_test2.py) will read through the ouput logs to make sure all members of the team are sending/receiving chunks from each other. 
-If everything is as expected, it will report that the team is functional. If there is a member of the team not sending/receiving chunks as expected it will be identified and the team reported as faulty.
+The python scripts [EMS_test1.py](https://github.com/kshi219/p2psp-console/blob/master/src/EMS_Tests/EMS_test1.py), [EMS_test2.py](https://github.com/kshi219/p2psp-console/blob/master/src/EMS_Tests/EMS_test2.py) will read through the ouput logs to make sure all members of the team have the correct lists of peers. 
+If everything is as expected, it will report that the team is functional. If there is a member of the team does not have the correct list of peers it will be identified and the team reported as faulty.
 
 After the python scripts finished running [cleanup_EMS_virtualNet1.sh](https://github.com/kshi219/p2psp-console/blob/master/src/EMS_Tests/cleanup_EMS_virtualNet1.sh) and [cleanup_EMS_virtualNet2.sh](https://github.com/kshi219/p2psp-console/blob/master/src/EMS_Tests/cleanup_EMS_virtualNet2.sh) will dismantle/remove the virtual networks.
 
