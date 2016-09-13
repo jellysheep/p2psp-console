@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <memory>
+
 #include "common.h"
 
 #if defined __IMS__
@@ -28,10 +29,14 @@
 #if defined __NTS__
 #include "core/splitter_nts.cc"
 #endif /* __NTS__ */
+#if defined __EMS__
+#include "core/splitter_ems.cc"
+#endif /* __EMS__ */
 #endif /* !__IMS__ */
 //#include "core/splitter_acs.h"
 //#include "core/splitter_lrs.h"
 //#include "core/splitter_nts.h"
+
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <signal.h>
@@ -52,6 +57,8 @@ p2psp::Splitter_ACS splitter;
 p2psp::Splitter_LRS splitter;
 #elif defined __NTS__
 p2psp::Splitter_NTS splitter;
+#elif defined __EMS__
+p2psp::Splitter_EMS splitter;
 #endif
 
 void HandlerCtrlC(int s) {
@@ -143,6 +150,7 @@ int main(int argc, const char *argv[]) {
 #endif
       ("splitter_port", boost::program_options::value<int>()->default_value(splitter_port), "Port to serve the peers.");
 
+
   boost::program_options::variables_map vm;
   try {
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -159,6 +167,7 @@ int main(int argc, const char *argv[]) {
     std::cout << desc << "\n";
     return 1;
   }
+
 
   // }}}
 
@@ -177,7 +186,12 @@ int main(int argc, const char *argv[]) {
 #if defined __NTS__
   std::cout << "Using Splitter_NTS" << std::endl;
 #endif /* __NTS__ */
+
+#if defined __EMS__
+  std::cout << "Using Splitter_EMS" << std::endl;
+#endif /* __EMS__ */
   
+
   if (vm.count("buffer_size")) {
     // {{{
 

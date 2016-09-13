@@ -19,6 +19,7 @@
 //#include <boost/format.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+
 #include <iostream>
 #include <chrono>
 //using namespace std;
@@ -57,9 +58,18 @@
 #endif    /* __monitor__ */
 #endif    /* __NTS__ */
 
+#if defined __EMS__
+#if defined __monitor__
+#include "core/monitor_ems.h"
+#else
+#include "core/peer_ems.h"
+#endif   /* __monitor__ */
+#endif   /* __EMS__ */
+
 #include "util/trace.h"
 
 // }}}
+
 
 namespace p2psp {
   using namespace std;
@@ -94,6 +104,15 @@ namespace p2psp {
     public Peer_SYMSP
 #endif /* __monitor__ */
 #endif /* __NTS__ */
+
+
+#if defined __EMS__
+#if defined __monitor__
+    public Monitor_EMS
+#else
+    public Peer_EMS
+#endif
+#endif /* __EMS__ */
 
   {
     //  class Console: public Peer_core {
@@ -418,6 +437,7 @@ namespace p2psp {
       return 1;
     }
 
+
     // }}}
 
 #if defined __IMS__
@@ -448,12 +468,20 @@ namespace p2psp {
 #endif /* __monitor__ */
 #endif /* __NTS__ */
 
+#if defined __EMS__
+#if defined __monitor__
+    std::cout << "Using Monitor_EMS" << std::endl;
+#else
+    std::cout << "Using Peer_EMS" << std::endl;
+#endif /* __monitor__ */
+#endif /* __EMS__ */
+
     // {{{ Peer instantiation
     
     class Console* peer = new Console();
 
     // }}}
-    
+
     if (vm.count("player_port")) {
       // {{{
 
