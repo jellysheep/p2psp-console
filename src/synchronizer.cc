@@ -213,7 +213,8 @@ namespace p2psp {
       //while(1)
       //{
         //mtx2.lock();
-        for(;(chunk_added-chunk_removed)<=1000;);
+        for(;(chunk_added-chunk_removed)<=500;)
+          boost::this_thread::sleep(boost::posix_time::milliseconds(0));
         //mtx2.unlock();
       //}
 
@@ -247,7 +248,8 @@ namespace p2psp {
 
     void Synchronizer::CheckPlayerStatus()
     {
-    	while(player_alive);
+    	while(player_alive)
+        boost::this_thread::sleep(boost::posix_time::seconds(3));
     	return;
     }
 }
