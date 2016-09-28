@@ -13,8 +13,8 @@
 namespace p2psp {
     Synchronizer::Synchronizer()
     : io_service_(),
-    player_socket_(io_service_),
-    acceptor_(io_service_)
+    acceptor_(io_service_),
+    player_socket_(io_service_)
     {
       player_port = 15000;
       peer_data = std::vector<std::vector<char> >();
@@ -104,7 +104,7 @@ namespace p2psp {
         {
         //TRACE("Receiving data from "<< s);
         //mtx.lock();
-        size_t bytes = boost::asio::read(peer_socket,boost::asio::buffer(message,1024));
+        boost::asio::read(peer_socket,boost::asio::buffer(message,1024));
         //TRACE("Message size "<<bytes);
         std::string empty_chunk_test (message.begin(),message.end());
         size_t found = empty_chunk_test.find(empty_chunk_str);
@@ -171,7 +171,7 @@ namespace p2psp {
             Synchronize();
             return;
             }
-            std::cout<<"Synchronized peer " << it-peer_data.begin()<<"at "<<found<<"\n";
+            std::cout<<"Synchronized peer " << it-peer_data.begin()<<" at "<<found<<"\n";
             it->erase(it->begin(),it->begin()+found); //Trim the first 'found' bytes of the vector
             it->resize(1024*1024);
         }
@@ -240,8 +240,8 @@ namespace p2psp {
 
     void Synchronizer::ChangeStream()
     {
-      boost::this_thread::sleep(boost::posix_time::seconds(20));
-      peer_id=(++peer_id)%(peer_list->size());
+      boost::this_thread::sleep(boost::posix_time::seconds(1));
+      peer_id=(peer_id+1)%(peer_list->size());
       std::cout<<"Changed Stream\n";
     }
 

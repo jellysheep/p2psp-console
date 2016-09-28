@@ -58,7 +58,8 @@ public:
     unsigned short player_port;                                        // Player Port
     bool synchronized,buffered;                                        //Stores whether peer chunks are synchronized
     std::mutex mtx,mtx2;                                                    //Mutex for concurrent I/O
-    unsigned int set_buffer_size=1024,chunk_added=0,chunk_removed=0,peer_id=0;
+    unsigned int set_buffer_size=1024,chunk_added=0,chunk_removed=0;
+    int peer_id=0;
     bool player_alive;
     void Run(int argc, const char* argv[]) throw(boost::system::system_error);  //Run the argument parser
     void PlayChunk();  //Play the chunk to the player
