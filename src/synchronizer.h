@@ -34,20 +34,6 @@ public:
     Synchronizer();
     ~Synchronizer();
 
-    struct VectorHash
-    {
-      std::size_t operator() (const std::vector<char>& v) const
-      {
-        std::hash<int> hasher;
-        std::size_t hashed;
-        for(int i=0;i<15;i++)
-        {
-          hashed ^= hasher(v[i]);
-        }
-        return hashed;
-      }
-    };
-
     const std::vector<std::string>* peer_list;                        //Vector which holds the addresses of peers
     std::vector<std::vector<char> > peer_data;                        //Vector to hold the chunk data of each peer
     std::vector<std::vector<char> > mixed_data;                       //Vector that contains chunks after mixing from various peers
@@ -58,7 +44,8 @@ public:
     unsigned short player_port;                                        // Player Port
     bool synchronized,buffered;                                        //Stores whether peer chunks are synchronized
     std::mutex mtx,mtx2;                                                    //Mutex for concurrent I/O
-    unsigned int set_buffer_size=1024,chunk_added=0,chunk_removed=0,peer_id=0;
+    unsigned int set_buffer_size=1024,chunk_added=0,chunk_removed=0;
+    int peer_id=0;
     bool player_alive;
     void Run(int argc, const char* argv[]) throw(boost::system::system_error);  //Run the argument parser
     void PlayChunk();  //Play the chunk to the player
