@@ -298,7 +298,7 @@ int main(int argc, const char *argv[]) {
     // {{{
 
     splitter.SetMaxNumberOfChunkLoss(vm["max_number_of_chunk_loss"].as<int>());
-    TRACE("Maximun number of lost chunks ="
+    TRACE("Maximun number of lost chunks = "
 	  << splitter.GetMaxNumberOfChunkLoss());
   }
 
