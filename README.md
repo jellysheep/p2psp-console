@@ -4,6 +4,7 @@
 
 ### Linux 
 ```
+$ sudo apt-get install cmake
 $ sudo apt-get install libboost-all-dev
 ```
 
