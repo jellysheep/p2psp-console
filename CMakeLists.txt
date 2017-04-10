@@ -29,6 +29,11 @@ list(APPEND BOOST_REQUIRED_COMPONENTS
   program_options
 )
 
+if(APPLE)
+  set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+  set(OPENSSL_INCLUDE_DIR "/usr/local/opt/openssl/include")
+endif(APPLE)
+
 find_package(Boost COMPONENTS
   ${BOOST_REQUIRED_COMPONENTS}
 REQUIRED)
