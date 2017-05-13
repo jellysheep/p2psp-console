@@ -5,6 +5,6 @@
 //#define __NTS__
 //#define __EMS__
 #define __D__
-
+//#define __SYMSP__ // depends on __NTS__
 
 /* Multiple layer selections have not been tested */

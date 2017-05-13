@@ -5,6 +5,7 @@ option(BUILD_PEER "Build the peer" ON)
 option(BUILD_MONITOR "Build the monitor" ON)
 option(BUILD_SPLITTER "Build the splitter" ON)
 option(BUILD_SYNCHRONIZER "Build the synchronizer" ON)
+option(BUILD_INCORPORATION_TEST "Build binaries with incorporation test flag" OFF)
 
 option(BUILD_WITH_CLANG "Build using the Clang compiler" OFF)
 
@@ -87,6 +88,10 @@ endif ()
 if(BUILD_PEER)
   # Executable
   add_executable(peer "src/peer.cc")
+  # Defines
+  if(BUILD_INCORPORATION_TEST)
+    target_compile_definitions(peer PUBLIC __incorporation_test__)
+  endif()
 
   # Libraries
   target_link_libraries(peer
@@ -107,6 +112,9 @@ if(BUILD_MONITOR)
   # Defines
   #add_definitions(-D__monitor__)
   target_compile_definitions(monitor PUBLIC __monitor__)
+  if(BUILD_INCORPORATION_TEST)
+    target_compile_definitions(monitor PUBLIC __incorporation_test__)
+  endif()
 
   # Libraries
   target_link_libraries(monitor
@@ -123,6 +131,10 @@ endif()
 if(BUILD_SPLITTER)
   # Executable
   add_executable(splitter "src/splitter.cc")
+  # Defines
+  if(BUILD_INCORPORATION_TEST)
+    target_compile_definitions(splitter PUBLIC __incorporation_test__)
+  endif()
 
   # Libraries
   target_link_libraries(splitter

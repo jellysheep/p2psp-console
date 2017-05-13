@@ -53,8 +53,11 @@
 #if defined __monitor__
 #include "core/monitor_nts.h"   // Includes Peer_NTS
 #else
-//#include "core/peer_nts.h"      // Includes peer_dbs.h
+#if defined __SYMSP__
 #include "core/peer_symsp.h"    // Includes peer_nts.h, which includes peer_dbs.h
+#else
+#include "core/peer_nts.h"      // Includes peer_dbs.h
+#endif
 #endif    /* __monitor__ */
 #endif    /* __NTS__ */
 
@@ -101,7 +104,11 @@ namespace p2psp {
 #if defined __monitor__
     public Monitor_NTS
 #else
+#if defined __SYMSP__
     public Peer_SYMSP
+#else
+    public Peer_NTS
+#endif
 #endif /* __monitor__ */
 #endif /* __NTS__ */
 
@@ -128,8 +135,10 @@ namespace p2psp {
     PORT_TYPE player_port_;
     io_service io_service_;
     ip::tcp::acceptor acceptor_;
+#if not defined __incorporation_test__
     ip::tcp::socket source_socket_;
     ip::tcp::socket player_socket_;
+#endif
     HEADER_SIZE_TYPE header_size_;
     struct Source source;
     std::string GET_message_;
@@ -140,9 +149,12 @@ namespace p2psp {
     // {{{
     
     Console() : io_service_(),
-		acceptor_(io_service_),
-		source_socket_(io_service_),
-		player_socket_(io_service_) {
+		acceptor_(io_service_)
+#if not defined __incorporation_test__
+		, source_socket_(io_service_)
+		, player_socket_(io_service_)
+#endif
+    {
       // {{{
 
       //header_size_ = GetDefaultHeaderSize();
@@ -255,6 +267,7 @@ namespace p2psp {
       // }}}
     }
     
+#if not defined __incorporation_test__
     void ConnectToTheSource() throw(boost::system::system_error) {
       // {{{
 
@@ -349,6 +362,7 @@ namespace p2psp {
 
       // }}}
     }
+#endif
     
     void SetPlayerPort(uint16_t player_port) {
       // {{{
@@ -396,7 +410,7 @@ namespace p2psp {
       int max_chunk_debt = p2psp::Peer_DBS::GetDefaultMaxChunkDebt();
       uint16_t team_port = p2psp::Peer_core::GetDefaultTeamPort();
 #endif
-#if defined __NTS__ && not defined __monitor__
+#if defined __SYMSP__ && not defined __monitor__
       int source_port_step = 0;
 #endif
 
@@ -407,7 +421,7 @@ namespace p2psp {
         ("max_chunk_debt", boost::program_options::value<int>()->default_value(max_chunk_debt), "Maximum number of times that other peer can not send a chunk to this peer.")
 #endif
         ("player_port", boost::program_options::value<uint16_t>()->default_value(player_port), "Port to communicate with the player.")
-#if defined __NTS__ && not defined __monitor__
+#if defined __SYMSP__ && not defined __monitor__
         ("source_port_step", boost::program_options::value<int>()->default_value(source_port_step), "Source port step forced when behind a sequentially port allocating NAT (conflicts with --chunk_loss_period).")
 #endif
         ("splitter_addr", boost::program_options::value<std::string>()->default_value(splitter_addr), "IP address or hostname of the splitter.")
@@ -415,6 +429,9 @@ namespace p2psp {
 #if not defined __IMS__
         ("team_port", boost::program_options::value<uint16_t>()->default_value(team_port), "Port to communicate with the peers. By default the OS will chose it.")
         ("use_localhost", "Forces the peer to use localhost instead of the IP of the adapter to connect to the splitter." "Notice that in this case, peers that run outside of the host will not be able to communicate with this peer.")
+#endif
+#if defined __incorporation_test__ && not defined __monitor__
+        ("quit_after_incorporation", "Quit peer with an exit code of 0 after successful incorporation. For testing purposes only.")
 #endif
 	;
 
@@ -464,7 +481,11 @@ namespace p2psp {
 #if defined __monitor__
     std::cout << "Using Monitor_NTS" << std::endl;
 #else
+#if defined __SYMSP__
+    std::cout << "Using Peer_SYMSP" << std::endl;
+#else
     std::cout << "Using Peer_NTS" << std::endl;
+#endif
 #endif /* __monitor__ */
 #endif /* __NTS__ */
 
@@ -492,10 +513,14 @@ namespace p2psp {
       // }}}
     }
 
+#if defined __incorporation_test__
+    TRACE("Incorporation test. Skipping connection to player.");
+#else
     peer->WaitForThePlayer();
     std::cout
       << "Player connected"
       << std::endl;
+#endif
 
     if (vm.count("splitter_addr")) {
       // {{{
@@ -531,8 +556,12 @@ namespace p2psp {
 	  << std::to_string(peer->GetSourcePort())
 	  << ")");
     
+#if defined __incorporation_test__
+    TRACE("Incorporation test. Skipping connection to source.");
+#else
     peer->ConnectToTheSource();
     TRACE("Connected to the source");
+#endif
     
     peer->ReceiveChannel();
     TRACE("channel = "
@@ -542,12 +571,16 @@ namespace p2psp {
     TRACE("Header size = "
 	  << peer->GetHeaderSize());
     
+#if defined __incorporation_test__
+    TRACE("Incorporation test. Skipping header relaying.");
+#else
     peer->RequestHeader();
     TRACE("Header requested");
 
     std::cout << "Relaying the header from the source to the player ... " << std::flush;
     peer->RelayHeader();
     std::cout << "done" << std::endl;
+#endif
     
     peer->ReceiveChunkSize();
     TRACE("Chunk size = "
@@ -606,18 +639,14 @@ namespace p2psp {
     // }}}
 #endif /* __IMS__*/
     
-#if defined __NTS__
-# if not defined __monitor__
+#if defined __SYMSP__ && !defined __monitor__
     // {{{
 
-    if (vm.count("source_port_step")) {
-      peer->SetPortStep(vm["source_port_step"].as<int>());
-    }
+    peer->SetPortStep(vm["source_port_step"].as<int>());
     TRACE("Source port step = "
-	  << peer->GetPortStep());
+      << peer->GetPortStep());
     
     // }}}
-#endif
 #endif
 
     peer->Init();    
@@ -643,6 +672,7 @@ namespace p2psp {
     TRACE("Recived the configuration from the splitter.");
     TRACE("Clossing the connection");
     
+#if not defined __incorporation_test__
     std::cout
       << "Buffering ... "
       << std::endl << std::flush; {
@@ -659,6 +689,16 @@ namespace p2psp {
 	<< std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()/1000000.0
 	<< " seconds" << std::endl;
     }
+#endif
+
+#if defined __incorporation_test__ && not defined __monitor__
+    if (vm.count("quit_after_incorporation")) {
+      TRACE("Only testing incorporation (which is successful).");
+      TRACE("Quitting with exit code 0.");
+      exit(0);
+    }
+#endif
+
     peer->Start();
     //LOG("Peer running in a thread");
 
